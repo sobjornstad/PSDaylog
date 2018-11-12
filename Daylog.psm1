@@ -21,6 +21,7 @@ function Parse-Daylog
     $accumulator = [System.Collections.Generic.List[string]]@()
     $accumulatedProperties = @{}
     $itemDate = $null
+    $itemName = $null
     $itemBilling = @{}
     $lastPunchTime = $null
 
@@ -46,8 +47,8 @@ function Parse-Daylog
                 }
             }
 
-            '(?<!=)=([a-zA-Z]+[a-zA-Z0-9]*)' {
-                # TODO: insert naming
+            ' (?<!=)=([a-zA-Z]+[a-zA-Z0-9]*)' {
+                $itemName = $Matches[1].Trim('=')
             }
 
             '(:[a-zA-Z0-9]+) ([@a-zA-Z0-9]+)' {
@@ -73,8 +74,11 @@ function Parse-Daylog
                     throw "Syntax error on line ${index}: '$on' block ended by '$endswhat'"
                 }
 
+                $thisName = if ($itemName) { $itemName } else { "Line$index" }
+
                 $obj = [PSCustomObject]@{
                     Type = $on
+                    Name = $thisName
                     Timestamp = $itemDate
                     Billing = $itemBilling.Clone()
                     Content = (Format-Accumulated $accumulator)
@@ -88,6 +92,7 @@ function Parse-Daylog
                 $accumulator.Clear()
                 $accumulatedProperties.Clear()
                 $itemBilling.Clear()
+                $itemName = $null
             }
 
             '^#end (done|punch|meeting)' {
@@ -95,6 +100,34 @@ function Parse-Daylog
             }
         }
         $index++
+    }
+}
+
+function Add-ResolvedMarkers ([Parameter(Mandatory, ValueFromPipeline)][PSCustomObject]$DaylogItem)
+{
+    begin {
+        $allItems = [System.Collections.ArrayList]@()
+        $resolvedNames = [System.Collections.ArrayList]@()
+    }
+
+    process {
+        $allItems.Add($_) | Out-Null
+        if ($DaylogItem.Resolves) {
+            $resolvedNames.Add($DaylogItem.resolves.Trim().Trim('@')) | Out-Null
+        }
+    }
+
+    end {
+        $allItems | ForEach-Object {
+            if ($_.Type -eq 'todo') {
+                Add-Member `
+                    -InputObject $_ `
+                    -MemberType NoteProperty `
+                    -Name Resolved `
+                    -Value ($_.Name -in $resolvedNames)
+            }
+            Write-Output $_
+        }
     }
 }
 
@@ -169,8 +202,11 @@ function Edit-Daylog
 
 .PARAMETER Unresolved
     Return only todo entries that have not been referenced in a :resolves
-    attribute by another entry. This implies -Type 'Todo'; specifying another
+    attribute by another entry. This implies '-Type Todo'; specifying another
     value will yield no results.
+
+.PARAMETER Name
+    Return the item with exactly the specified name.
 #>
 function Find-Daylog
 {
@@ -196,11 +232,11 @@ function Find-Daylog
 
         [switch]$Content = $false,
 
-        # below this line are not yet implemented
-        [switch]$Unresolved = $true,
+        [switch]$Unresolved = $false,
 
         [string]$Name = $null,
 
+        # below this line are not yet implemented
         [string]$ReferencesName = $null,
 
         [switch]$Yesterday = $false,
@@ -208,7 +244,7 @@ function Find-Daylog
         [switch]$ThisWeek = $false
     )
 
-    $objs = Parse-Daylog
+    $objs = Parse-Daylog | Add-ResolvedMarkers
     
     if ($Type) {
         $objs = $objs | Where-Object { $_.Type -eq $Type }
@@ -241,6 +277,14 @@ function Find-Daylog
 
     if ($BilledTo) {
         $objs = $objs | Where-Object { $_.Billing.ContainsKey($BilledTo) }
+    }
+
+    if ($Unresolved) {
+        $objs = $objs | Where-Object { $_.Type -eq 'todo' -and $_.Resolved -eq $false }
+    }
+
+    if ($Name) {
+        $objs = $objs | Where-Object { $_.Name -eq $Name }
     }
 
     if ($Content) {
@@ -282,7 +326,7 @@ function Get-DaylogTimecard ([switch]$Total)
 function Format-DaylogTimeSummary
 {
     param(
-        [Parameter(Mandatory, ValueFromPipeline)]
+        [Parameter(ValueFromPipeline)]
         [PSCustomObject[]]$EntriesToSearch = (Find-Daylog)
     )
 
