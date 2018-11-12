@@ -15,7 +15,7 @@ function Format-Accumulated ([System.Collections.Generic.List[string]]$acc)
 }
 
 
-function Parse-Daylog
+function Read-Daylog
 {
     $daylogLines = (Get-Content $DAYLOG_FILE)
     $accumulator = [System.Collections.Generic.List[string]]@()
@@ -103,7 +103,7 @@ function Parse-Daylog
     }
 }
 
-function Add-ResolvedMarkers ([Parameter(Mandatory, ValueFromPipeline)][PSCustomObject]$DaylogItem)
+function Add-ResolvedMarkerFromList ([Parameter(Mandatory, ValueFromPipeline)][PSCustomObject]$DaylogItem)
 {
     begin {
         $allItems = [System.Collections.ArrayList]@()
@@ -214,7 +214,7 @@ function Find-Daylog
     param(
         [ValidateSet('Punch','Todo','Done','Solution','Notes','Meeting')]
         [string]$Type = $null,
-        
+
         [string]$Contains = $null,
 
         [string]$Match = $null,
@@ -244,12 +244,12 @@ function Find-Daylog
         [switch]$ThisWeek = $false
     )
 
-    $objs = Parse-Daylog | Add-ResolvedMarkers
-    
+    $objs = Read-Daylog | Add-ResolvedMarkerFromList
+
     if ($Type) {
         $objs = $objs | Where-Object { $_.Type -eq $Type }
     }
-    
+
     if ($Contains) {
         $objs = $objs | Where-Object { $_.Content.Contains($Contains) }
     }
