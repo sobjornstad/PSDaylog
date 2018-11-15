@@ -359,7 +359,8 @@ function Format-DaylogTimeSummary
 {
     param(
         [Parameter(ValueFromPipeline)]
-        [PSCustomObject[]]$EntriesToSearch = (Find-Daylog)
+        [PSCustomObject[]]$EntriesToSearch = (Find-Daylog),
+        [switch]$NoTotal
     )
 
     begin {
@@ -379,7 +380,20 @@ function Format-DaylogTimeSummary
     }
 
     end {
-        return $times
+        $times.GetEnumerator() | Foreach-Object {
+            Write-Output ([PSCustomObject]@{
+                PSTypeName = 'TimeSummaryEntry'
+                BillingArea = $_.Key
+                Hours = $_.Value
+            })
+        }
+        if (-not $NoTotal) {
+            Write-Output ([PSCustomObject]@{
+                PSTypeName = 'TimeSummaryEntry'
+                BillingArea = 'Total'
+                Hours = ($times.Values | Measure-Object -Sum).Sum
+            })
+        }
     }
 }
 
