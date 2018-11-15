@@ -305,7 +305,7 @@ function Find-Daylog
 
 
 # Primarily used for debug purposes to make sure my time is accurate in these early days!
-function Get-DaylogTimecard ([switch]$Total)
+function Get-DaylogTimecard ([switch]$NoTotal)
 {
     $timecard = Find-Daylog -Today | Select-Object @(
         'Type',
@@ -315,7 +315,7 @@ function Get-DaylogTimecard ([switch]$Total)
     ) | Where-Object { $_.Type -eq 'punch' -or $_.Time -gt 0 }
 
     Write-Output $timecard
-    if ($Total) {
+    if (-not $NoTotal) {
         $totalHours = $timecard | Measure-Object -Property Time -Sum | Select-Object -ExpandProperty Sum
         Write-Output ([PSCustomObject]@{Type = 'total'; Time = $totalHours})
     }
