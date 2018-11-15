@@ -237,6 +237,8 @@ function Find-Daylog
 
         [switch]$Today = $false,
 
+        [switch]$ThisWeek = $false,
+
         [string]$BilledTo = $null,
 
         [switch]$Content = $false,
@@ -248,9 +250,7 @@ function Find-Daylog
         # below this line are not yet implemented
         [string]$ReferencesName = $null,
 
-        [switch]$Yesterday = $false,
-
-        [switch]$ThisWeek = $false
+        [switch]$Yesterday = $false
     )
 
     $objs = Read-Daylog | Add-ResolvedMarkerFromList
@@ -274,6 +274,14 @@ function Find-Daylog
 
     if ($Today) {
         $MinDate = [datetime]::Today
+    }
+
+    if ($ThisWeek) {
+        # DayOfWeek starts with Sunday at 0. So this is equivalent to the
+        # number of days since the last (or current) Sunday.
+        [int]$daysSinceSunday = [datetime]::Today.DayOfWeek
+        $MinDate = [datetime]::Today.Subtract([timespan]::FromDays($daysSinceSunday))
+        $MaxDate = [datetime]::Now
     }
 
     if ($MinDate) {
