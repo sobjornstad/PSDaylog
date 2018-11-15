@@ -1,6 +1,7 @@
-﻿[string]$EDITOR = "C:\Program Files\TortoiseGit\bin\notepad2.exe"
+﻿[string]$EDITOR = "code"
 [string]$DAYLOG_FILE = "I:\fsroot\Job\Daylog\daylog.txt"
 [float]$ROUNDING_ERROR_TOLERANCE = 0.02
+
 
 function Get-Timestamp
 {
@@ -345,16 +346,6 @@ function Format-DaylogTimecard
 }
 
 
-## Needed use cases for functions:
-# - Explore time log entries (see Get-TimeToday) for a day to see if something's fishy
-# - See how long I have spent on a given task or set of matching daylog entries
-# - See a daily summary for the whole week (?).
-
-
-
-# Use cases:
-# - See how long I spent on tasks today.
-# - See how long I spent on tasks this week, for entering into Time Reporting.
 function Format-DaylogTimeSummary
 {
     param(
@@ -396,9 +387,6 @@ function Format-DaylogTimeSummary
         }
     }
 }
-
-
-
 
 
 Set-Alias -Name fdl -Value Find-Daylog
