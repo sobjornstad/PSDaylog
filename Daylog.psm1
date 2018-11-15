@@ -1,4 +1,14 @@
-﻿[string]$EDITOR = "code"
+﻿<#
+    TODO
+    - Have a way to get all used fields (and maybe their frequency).
+    - "Hats"
+    - Punch types? (as a field)
+    - Find a way to reconcile spaces in colon-attributes
+#>
+
+
+
+[string]$EDITOR = "code"
 [string]$DAYLOG_FILE = "I:\fsroot\Job\Daylog\daylog.txt"
 [float]$ROUNDING_ERROR_TOLERANCE = 0.02
 
@@ -200,6 +210,10 @@ function Edit-Daylog
 .PARAMETER Today
     Shorthand for '-MinDate [datetime]::Today'.
 
+.PARAMETER ThisWeek
+    Find all entries dated after midnight of the previous Sunday (or midnight
+    today, if today is Sunday).
+
 .PARAMETER BilledTo
     Return only entries billed to the specified account;
     '-BilledTo TeamSupport' finds entries that contain '$TeamSupport'.
@@ -313,6 +327,40 @@ function Find-Daylog
 }
 
 
+<#
+.SYNOPSIS
+    Show an exact list of timecard punches made creating billable hours.
+
+.DESCRIPTION
+    Given a list of items obtained from Find-Daylog, walk through them
+    and format each item that is either of type punch or had a nonzero
+    number of hours billed to a billing area.
+
+    Display the item type, time, billed categories, and number of hours.
+
+    Typically this is useful for checking to make sure your billing was done
+    correctly when it seems odd, or what times you were working on certain
+    topics.
+
+.PARAMETER ValueToFormat
+    A stream of daylog entries.
+
+.PARAMETER NoTotal
+    Do not include the "Total" item at the end. This may be helpful if you're
+    trying to do math on or take further scripted action on the results. This
+    is essentially equivalent to passing the output through
+    'Where-Object { $_.BillingArea -ne 'Total' }'.
+
+.EXAMPLE
+    See a record of what you billed today:
+    PS> Find-Daylog -Today | Format-DaylogTimecard
+
+    See how long on average you spend on Done items that mention Git and are
+    billed to TeamSupport:
+    PS> Find-Daylog -Type Done -Contains 'Git' -BilledTo TeamSupport |
+            Format-DaylogTimecard -NoTotal |
+            Measure-Object -Property Time -Average
+#>
 function Format-DaylogTimecard
 {
     param(
@@ -346,6 +394,45 @@ function Format-DaylogTimecard
 }
 
 
+<#
+.SYNOPSIS
+    Group piped daylog items by billing area and show the hours spent in each.
+
+.DESCRIPTION
+    Given a list of items obtained from Find-Daylog, walk through them and sum
+    up the time that you spent on each billing item. This is useful both for
+    official time reporting and to get an idea of how long you're spending on
+    things; the Time Reporting Reports are helpful but this has the potential
+    to be even more helpful.
+
+    Since you can pipe in absolutely any set of arguments, you can easily get
+    a report on whatever you can dream of.
+
+.PARAMETER EntriesToSearch
+    A stream of daylog entries.
+
+.PARAMETER NoTotal
+    Do not include the "Total" item at the end. This may be helpful if you're
+    trying to do math on or take further scripted action on the results. This
+    is essentially equivalent to passing the output through
+    'Where-Object { $_.BillingArea -ne 'Total' }'.
+
+.EXAMPLE
+    Show the time you've spent on each billing area since the beginning of the
+    daylog:
+    PS> Find-Daylog | Format-DaylogTimeSummary
+
+.EXAMPLE
+    Get time reporting data after making your last report on Friday afternoon:
+    PS> Find-Daylog -ThisWeek | Format-DaylogTimeSummary
+
+.EXAMPLE
+    See how long you've spent in TFS standup meetings since the beginning of the year:
+    PS> Find-Daylog `
+            -Type Meeting `
+            -Attribute recurrenceof=TfsStandup `
+            -MinDate ([datetime]::new(2018,1,1)) | Format-DaylogTimeSummary
+#>
 function Format-DaylogTimeSummary
 {
     param(
