@@ -260,7 +260,7 @@ function Find-Daylog
     }
 
     if ($Contains) {
-        $objs = $objs | Where-Object { $_.Content.Contains($Contains) }
+        $objs = $objs | Where-Object { $_.Content -match [regex]::Escape($Contains) }
     }
 
     if ($Match) {
