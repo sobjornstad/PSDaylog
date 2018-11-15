@@ -1,7 +1,6 @@
 ﻿[string]$EDITOR = "C:\Program Files\TortoiseGit\bin\notepad2.exe"
-[string]$DAYLOG_FILE = "I:\fsroot\Job\daylog.txt"
-#[string]$DAYLOG_FILE = "I:\fsroot\Compostbin\daylog-crap.txt"
-
+[string]$DAYLOG_FILE = "I:\fsroot\Job\Daylog\daylog.txt"
+[float]$ROUNDING_ERROR_TOLERANCE = 0.02
 
 function Get-Timestamp
 {
@@ -72,6 +71,16 @@ function Read-Daylog
                 $endswhat = $_ -replace '^\#end (.*)\s*','$1'
                 if ($endswhat -ne $on) {
                     throw "Syntax error on line ${index}: '$on' block ended by '$endswhat'"
+                }
+
+                if ($itemBilling.Count -gt 1) {
+                    $specifiedHours = ($itemBilling.Values | Measure-Object -Sum).Sum
+                    $actualHoursElapsed = [math]::Round(($itemDate - $lastPunchTime).TotalHours, 2)
+                    if ([math]::Abs($specifiedHours - $actualHoursElapsed) -gt $ROUNDING_ERROR_TOLERANCE) {
+                        Write-Warning ("Split billing for item ending on line ${index} does not add up to " +
+                                       "the total time elapsed since the last billable item " +
+                                       "($specifiedHours vs $actualHoursElapsed).")
+                    }
                 }
 
                 $thisName = if ($itemName) { $itemName } else { "Line$index" }
