@@ -312,20 +312,35 @@ function Find-Daylog
 }
 
 
-# Primarily used for debug purposes to make sure my time is accurate in these early days!
-function Get-DaylogTimecard ([switch]$NoTotal)
+function Format-DaylogTimecard
 {
-    $timecard = Find-Daylog -Today | Select-Object @(
-        'Type',
-        'Timestamp',
-        @{Name = 'BilledCategories'; Expression = { ($_.Billing.Keys) }}
-        @{Name = 'Time'; Expression = { ($_.Billing.Values | Measure-Object -Sum).Sum }}
-    ) | Where-Object { $_.Type -eq 'punch' -or $_.Time -gt 0 }
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [PSCustomObject]$ValueToFormat,
 
-    Write-Output $timecard
-    if (-not $NoTotal) {
-        $totalHours = $timecard | Measure-Object -Property Time -Sum | Select-Object -ExpandProperty Sum
-        Write-Output ([PSCustomObject]@{Type = 'total'; Time = $totalHours})
+        [switch]$NoTotal
+    )
+
+    begin {
+        $accumulator = [System.Collections.ArrayList]@()
+    }
+    process {
+        $accumulator.Add($ValueToFormat) | Out-Null
+    }
+
+    end {
+        $timecard = $accumulator | Select-Object @(
+            'Type',
+            'Timestamp',
+            @{Name = 'BilledCategories'; Expression = { ($_.Billing.Keys) }}
+            @{Name = 'Time'; Expression = { ($_.Billing.Values | Measure-Object -Sum).Sum }}
+        ) | Where-Object { $_.Type -eq 'punch' -or $_.Time -gt 0 }
+
+        Write-Output $timecard
+        if (-not $NoTotal) {
+            $totalHours = $timecard | Measure-Object -Property Time -Sum | Select-Object -ExpandProperty Sum
+            Write-Output ([PSCustomObject]@{Type = 'total'; Time = $totalHours})
+        }
     }
 }
 
@@ -375,3 +390,4 @@ function Format-DaylogTimeSummary
 Set-Alias -Name fdl -Value Find-Daylog
 Set-Alias -Name edl -Value Edit-Daylog
 Set-Alias -Name fds -Value Format-DaylogTimeSummary
+Set-Alias -Name fdt -Value Format-DaylogTimecard
