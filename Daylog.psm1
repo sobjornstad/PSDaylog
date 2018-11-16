@@ -252,6 +252,8 @@ function Find-Daylog
 
         [switch]$Today = $false,
 
+        [switch]$Yesterday = $false,
+
         [switch]$ThisWeek = $false,
 
         [string]$BilledTo = $null,
@@ -263,9 +265,7 @@ function Find-Daylog
         [string]$Name = $null,
 
         # below this line are not yet implemented
-        [string]$ReferencesName = $null,
-
-        [switch]$Yesterday = $false
+        [string]$ReferencesName = $null
     )
 
     $objs = Read-Daylog | Add-ResolvedMarkerFromList
@@ -289,6 +289,11 @@ function Find-Daylog
 
     if ($Today) {
         $MinDate = [datetime]::Today
+    }
+
+    if ($Yesterday) {
+        $MinDate = [datetime]::Today.Subtract([timespan]::FromDays(1))
+        $MaxDate = [datetime]::Today
     }
 
     if ($ThisWeek) {
