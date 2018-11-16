@@ -95,7 +95,9 @@ function Read-Daylog
                     if ([math]::Abs($specifiedHours - $actualHoursElapsed) -gt $ROUNDING_ERROR_TOLERANCE) {
                         Write-Warning ("Split billing for item ending on line ${index} does not add up to " +
                                        "the total time elapsed since the last billable item " +
-                                       "($specifiedHours vs $actualHoursElapsed).")
+                                       "($specifiedHours vs $actualHoursElapsed). If you didn't intend to " +
+                                       "use split billing, did you include a dollar amount without escaping " +
+                                       "the dollar sign (`$`$)?")
                     }
                 }
 
