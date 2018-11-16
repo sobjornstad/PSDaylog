@@ -268,25 +268,8 @@ function Find-Daylog
         [string]$ReferencesName = $null
     )
 
-    $objs = Read-Daylog | Add-ResolvedMarkerFromList
-
-    if ($Type) {
-        $objs = $objs | Where-Object { $_.Type -eq $Type }
-    }
-
-    if ($Contains) {
-        $objs = $objs | Where-Object { $_.Content -match [regex]::Escape($Contains) }
-    }
-
-    if ($Match) {
-        $objs = $objs | Where-Object { $_.Content -match $Match }
-    }
-
-    if ($Attribute) {
-        $field, $value = $Attribute.Split('=')
-        $objs = $objs | Where-Object { $_.$field -match $value }
-    }
-
+    # Some parameters are aliases for other more complicated ones. Convert them
+    # to the simple versions.
     if ($Today) {
         $MinDate = [datetime]::Today
     }
@@ -304,26 +287,40 @@ function Find-Daylog
         $MaxDate = [datetime]::Now
     }
 
+
+    # Create objects from the file and filter based on parameters.
+    $objs = Read-Daylog | Add-ResolvedMarkerFromList
+
+    if ($Type) {
+        $objs = $objs | Where-Object { $_.Type -eq $Type }
+    }
+    if ($Contains) {
+        $objs = $objs | Where-Object { $_.Content -match [regex]::Escape($Contains) }
+    }
+    if ($Match) {
+        $objs = $objs | Where-Object { $_.Content -match $Match }
+    }
+    if ($Attribute) {
+        $field, $value = $Attribute.Split('=')
+        $objs = $objs | Where-Object { $_.$field -match $value }
+    }
     if ($MinDate) {
         $objs = $objs | Where-Object { $_.Timestamp -ge $MinDate }
     }
-
     if ($MaxDate) {
         $objs = $objs | Where-Object { $_.Timestamp -le $MaxDate }
     }
-
     if ($BilledTo) {
         $objs = $objs | Where-Object { $_.Billing.ContainsKey($BilledTo) }
     }
-
     if ($Unresolved) {
         $objs = $objs | Where-Object { $_.Type -eq 'todo' -and $_.Resolved -eq $false }
     }
-
     if ($Name) {
         $objs = $objs | Where-Object { $_.Name -eq $Name }
     }
 
+    # Output the results.
     if ($Content) {
         return [string]::Join("`r`n`r`n", $objs.Content)
     } else {
