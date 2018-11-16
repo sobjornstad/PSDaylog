@@ -1,9 +1,9 @@
 ﻿<#
     TODO
     - Have a way to get all used fields (and maybe their frequency).
-    - "Hats"
     - Punch types? (as a field)
     - Find a way to reconcile spaces in colon-attributes
+    - Throw an error if dates/times are (significantly?) out of order.
 #>
 
 
@@ -33,6 +33,7 @@ function Read-Daylog
     $itemDate = $null
     $itemName = $null
     $itemBilling = @{}
+    $hats = [System.Collections.ArrayList]@()
     $lastPunchTime = $null
 
     $on = 'none'
@@ -63,6 +64,10 @@ function Read-Daylog
 
             '(:[a-zA-Z0-9]+) ([@a-zA-Z0-9]+)' {
                 $accumulatedProperties[($Matches[1].Trim(':'))] = $Matches[2]
+            }
+
+            '\^([a-zA-Z0-9]+)' {
+                $hats.Add($Matches[1]) | Out-Null
             }
 
             '(?<!\$)\$([a-zA-Z0-9]+)(\s|$)' {
@@ -103,6 +108,9 @@ function Read-Daylog
                     Billing = $itemBilling.Clone()
                     Content = (Format-Accumulated $accumulator)
                 }
+                if ($hats) {
+                    $obj | Add-Member -MemberType NoteProperty -Name Hats -Value $hats.Clone()
+                }
                 foreach ($property in $accumulatedProperties.GetEnumerator()) {
                     $obj | Add-Member -MemberType NoteProperty -Name $property.Key -Value $property.Value
                 }
@@ -112,6 +120,7 @@ function Read-Daylog
                 $accumulator.Clear()
                 $accumulatedProperties.Clear()
                 $itemBilling.Clear()
+                $hats.Clear()
                 $itemName = $null
             }
 
@@ -264,6 +273,8 @@ function Find-Daylog
 
         [string]$Name = $null,
 
+        [string]$Hat = $null,
+
         # below this line are not yet implemented
         [string]$ReferencesName = $null
     )
@@ -318,6 +329,9 @@ function Find-Daylog
     }
     if ($Name) {
         $objs = $objs | Where-Object { $_.Name -eq $Name }
+    }
+    if ($Hat) {
+        $objs = $objs | Where-Object { $_.Hats -contains $Hat }
     }
 
     # Output the results.
