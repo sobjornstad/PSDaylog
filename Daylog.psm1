@@ -31,6 +31,7 @@ function Read-Daylog
     $daylogLines = (Get-Content $DAYLOG_FILE)
 
     $itemStartLine = -1
+    $lastDate = $null
     $accumulator = [System.Collections.Generic.List[string]]@()
     $accumulatedProperties = @{}
     $itemDate = $null
@@ -60,6 +61,13 @@ function Read-Daylog
                 } catch [System.FormatException] {
                     throw "Syntax error on line ${index}: invalid date format '$Matches[2]'."
                 }
+
+                if ($lastDate.Date -ne $itemDate.Date) {
+                    if ($null -ne $lastDate) {
+                        Write-Output (New-BreakItem -Timestamp $lastDate)
+                    }
+                }
+                $lastDate = $itemDate
             }
 
             ' (?<!=)=([a-zA-Z]+[a-zA-Z0-9]*)' {
@@ -137,6 +145,8 @@ function Read-Daylog
         }
         $index++
     }
+
+    Write-Output (New-BreakItem -Timestamp $lastDate)
 }
 
 function Add-ResolvedMarkerFromList ([Parameter(Mandatory, ValueFromPipeline)][PSCustomObject]$DaylogItem)
@@ -247,12 +257,15 @@ function Edit-Daylog
 
 .PARAMETER Name
     Return the item with exactly the specified name.
+
+.PARAMETER NoBreak
+    Do not return automatically added break time entries for each day.
 #>
 function Find-Daylog
 {
     [CmdletBinding()]
     param(
-        [ValidateSet('Punch','Todo','Done','Solution','Notes','Meeting')]
+        [ValidateSet('Punch','Todo','Done','Solution','Notes','Meeting', 'Break')]
         [string]$Type = $null,
 
         [string]$Contains = $null,
@@ -281,6 +294,8 @@ function Find-Daylog
         [string]$Name = $null,
 
         [string]$Hat = $null,
+
+        [switch]$NoBreak = $false,
 
         # below this line are not yet implemented
         [string]$ReferencesName = $null
@@ -311,6 +326,9 @@ function Find-Daylog
 
     if ($Type) {
         $objs = $objs | Where-Object { $_.Type -eq $Type }
+    }
+    if ($NoBreak) {
+        $objs = $objs | Where-Object { $_.Type -ne 'break' }
     }
     if ($Contains) {
         $objs = $objs | Where-Object { $_.Content -match [regex]::Escape($Contains) }
@@ -353,7 +371,7 @@ function Find-Daylog
 function New-BreakItem ([datetime]$Timestamp)
 {
     return ([PSCustomObject]@{Type = 'break'
-                              Time = $BREAK_TIME
+                              Billing = @{'BreakTime' = [math]::Round($BREAK_TIME, 2)}
                               Timestamp = $Timestamp})
 }
 
@@ -376,9 +394,6 @@ function New-BreakItem ([datetime]$Timestamp)
 .PARAMETER ValueToFormat
     A stream of daylog entries.
 
-.PARAMETER NoBreak
-    Do not include an automatic entry for break time.
-
 .PARAMETER TimesOnly
     Do not include annotated information like total time and margin at the
     end. This may be helpful if you're trying to do math on or take further
@@ -400,21 +415,13 @@ function Format-DaylogTimecard
         [Parameter(Mandatory, ValueFromPipeline)]
         [PSCustomObject]$ValueToFormat,
 
-        [switch]$NoBreak = $false,
         [switch]$TimesOnly = $false
     )
 
     begin {
         $accumulator = [System.Collections.ArrayList]@()
-        $lastTimestamp = $null
     }
     process {
-        if ($lastTimestamp.Date -ne $ValueToFormat.Timestamp.Date) {
-            if ($null -ne $lastTimestamp -and -not $NoBreak) {
-                $accumulator.Add((New-BreakItem -Timestamp $lastTimestamp)) | Out-Null
-            }
-        }
-        $lastTimestamp = $ValueToFormat.Timestamp
         $accumulator.Add($ValueToFormat) | Out-Null
     }
 
@@ -430,9 +437,7 @@ function Format-DaylogTimecard
 
         Write-Output $timecard
         if (-not $TimesOnly) {
-            $totalHours = [math]::Round(
-                ($timecard | Measure-Object -Property Time -Sum | Select-Object -ExpandProperty Sum),
-                2)
+            $totalHours = ($timecard | Measure-Object -Property Time -Sum | Select-Object -ExpandProperty Sum)
             Write-Output ([PSCustomObject]@{Type = 'total'; Time = $totalHours})
         }
     }
