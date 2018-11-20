@@ -28,6 +28,8 @@ function Format-Accumulated ([System.Collections.Generic.List[string]]$acc)
 function Read-Daylog
 {
     $daylogLines = (Get-Content $DAYLOG_FILE)
+
+    $itemStartLine = -1
     $accumulator = [System.Collections.Generic.List[string]]@()
     $accumulatedProperties = @{}
     $itemDate = $null
@@ -47,6 +49,7 @@ function Read-Daylog
             '^#(punch|todo|solution|done|notes|meeting)\s+(20[0-9]{2}-[01][1-9]-[0-3][0-9] [0-2][0-9]:[0-5][0-9])' {
                 # we were in 'none', so we have to add it now
                 $accumulator.Add($line) | Out-Null
+                $itemStartLine = $index
                 $on = $Matches[1]
                 try {
                     $itemDate = [datetime]::ParseExact(
@@ -93,18 +96,19 @@ function Read-Daylog
                     $specifiedHours = ($itemBilling.Values | Measure-Object -Sum).Sum
                     $actualHoursElapsed = [math]::Round(($itemDate - $lastPunchTime).TotalHours, 2)
                     if ([math]::Abs($specifiedHours - $actualHoursElapsed) -gt $ROUNDING_ERROR_TOLERANCE) {
-                        Write-Warning ("Split billing for item ending on line ${index} does not add up to " +
-                                       "the total time elapsed since the last billable item " +
+                        Write-Warning ("Split billing for item beginning on line ${itemStartLine} does not add up " +
+                                       "to the total time elapsed since the last billable item " +
                                        "($specifiedHours vs $actualHoursElapsed). If you didn't intend to " +
                                        "use split billing, did you include a dollar amount without escaping " +
                                        "the dollar sign (`$`$)?")
                     }
                 }
 
-                $thisName = if ($itemName) { $itemName } else { "Line$index" }
+                $thisName = if ($itemName) { $itemName } else { "Line$itemStartLine" }
 
                 $obj = [PSCustomObject]@{
                     Type = $on
+                    Line = $itemStartLine
                     Name = $thisName
                     Timestamp = $itemDate
                     Billing = $itemBilling.Clone()
