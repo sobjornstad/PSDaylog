@@ -11,6 +11,7 @@
 [string]$EDITOR = "code"
 [string]$DAYLOG_FILE = "I:\fsroot\Job\Daylog\daylog.txt"
 [float]$ROUNDING_ERROR_TOLERANCE = 0.02
+[float]$BREAK_TIME = 0.42
 
 
 function Get-Timestamp
@@ -349,6 +350,14 @@ function Find-Daylog
 }
 
 
+function New-BreakItem ([datetime]$Timestamp)
+{
+    return ([PSCustomObject]@{Type = 'break'
+                              Time = $BREAK_TIME
+                              Timestamp = $Timestamp})
+}
+
+
 <#
 .SYNOPSIS
     Show an exact list of timecard punches made creating billable hours.
@@ -367,11 +376,13 @@ function Find-Daylog
 .PARAMETER ValueToFormat
     A stream of daylog entries.
 
-.PARAMETER NoTotal
-    Do not include the "Total" item at the end. This may be helpful if you're
-    trying to do math on or take further scripted action on the results. This
-    is essentially equivalent to passing the output through
-    'Where-Object { $_.BillingArea -ne 'Total' }'.
+.PARAMETER NoBreak
+    Do not include an automatic entry for break time.
+
+.PARAMETER TimesOnly
+    Do not include annotated information like total time and margin at the
+    end. This may be helpful if you're trying to do math on or take further
+    scripted action on the results.
 
 .EXAMPLE
     See a record of what you billed today:
@@ -380,7 +391,7 @@ function Find-Daylog
     See how long on average you spend on Done items that mention Git and are
     billed to TeamSupport:
     PS> Find-Daylog -Type Done -Contains 'Git' -BilledTo TeamSupport |
-            Format-DaylogTimecard -NoTotal |
+            Format-DaylogTimecard -TimesOnly |
             Measure-Object -Property Time -Average
 #>
 function Format-DaylogTimecard
@@ -389,13 +400,21 @@ function Format-DaylogTimecard
         [Parameter(Mandatory, ValueFromPipeline)]
         [PSCustomObject]$ValueToFormat,
 
-        [switch]$NoTotal
+        [switch]$NoBreak = $false,
+        [switch]$TimesOnly = $false
     )
 
     begin {
         $accumulator = [System.Collections.ArrayList]@()
+        $lastTimestamp = $null
     }
     process {
+        if ($lastTimestamp.Date -ne $ValueToFormat.Timestamp.Date) {
+            if ($null -ne $lastTimestamp -and -not $NoBreak) {
+                $accumulator.Add((New-BreakItem -Timestamp $lastTimestamp)) | Out-Null
+            }
+        }
+        $lastTimestamp = $ValueToFormat.Timestamp
         $accumulator.Add($ValueToFormat) | Out-Null
     }
 
@@ -404,12 +423,16 @@ function Format-DaylogTimecard
             'Type',
             'Timestamp',
             @{Name = 'BilledCategories'; Expression = { ($_.Billing.Keys) }}
-            @{Name = 'Time'; Expression = { ($_.Billing.Values | Measure-Object -Sum).Sum }}
+            @{Name = 'Time'; Expression = {
+                if ($_.Time) { $_.Time } else { ($_.Billing.Values | Measure-Object -Sum).Sum }
+            }}
         ) | Where-Object { $_.Type -eq 'punch' -or $_.Time -gt 0 }
 
         Write-Output $timecard
-        if (-not $NoTotal) {
-            $totalHours = $timecard | Measure-Object -Property Time -Sum | Select-Object -ExpandProperty Sum
+        if (-not $TimesOnly) {
+            $totalHours = [math]::Round(
+                ($timecard | Measure-Object -Property Time -Sum | Select-Object -ExpandProperty Sum),
+                2)
             Write-Output ([PSCustomObject]@{Type = 'total'; Time = $totalHours})
         }
     }
