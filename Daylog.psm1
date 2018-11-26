@@ -92,22 +92,22 @@ function Read-Daylog
                 [string]$billedTo = $Matches[1]
                 [timespan]$sinceLastPunch = $itemDate - $lastPunchTime
                 [decimal]$hours = [math]::Round($sinceLastPunch.TotalHours, 2)
-                $itemBilling.Add($billedTo, $hours)
+                $itemBilling.Add($billedTo, $hours) | Out-Null
 
                 if ($autohatMap.ContainsKey($Matches[1]) -and
                         -not $hats.Contains($autohatMap[$Matches[1]])) {
-                    $hats.Add($autohatMap[$Matches[1]])
+                    $hats.Add($autohatMap[$Matches[1]]) | Out-Null
                 }
             }
 
             '(?<!\$)\$([a-zA-Z0-9]+)~(?:([0-9]+)h)?(?:([0-9]+)m)?' {
                 [string]$billedTo, [int]$billedHours, [int]$billedMinutes = $Matches[1..3]
                 [decimal]$hours = [math]::Round($billedHours + $billedMinutes / 60, 2)
-                $itemBilling.Add($billedTo, $hours)
+                $itemBilling.Add($billedTo, $hours) | Out-Null
 
                 if ($autohatMap.ContainsKey($Matches[1]) -and
                         -not $hats.Contains($autohatMap[$Matches[1]])) {
-                    $hats.Add($autohatMap[$Matches[1]])
+                    $hats.Add($autohatMap[$Matches[1]]) | Out-Null
                 }
             }
 
