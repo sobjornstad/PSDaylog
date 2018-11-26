@@ -218,6 +218,47 @@ function Edit-Daylog
 
 <#
 .SYNOPSIS
+    Return information on Daylog directives matching your criteria.
+
+.DESCRIPTION
+    Read through the daylog file looking for all directives (i.e., lines
+    outside of sections beginning with '!') of the specified type. Print
+    objects describing them.
+
+.PARAMETER DirectiveType
+    Find only a specific type of directive.
+#>
+function Find-DaylogDirectives
+{
+    param(
+        [Parameter(Mandatory)][ValidateSet('Autohat')][string]$DirectiveType
+    )
+
+    $directives = @{
+        'Autohat' = @{Regex = '!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)'
+                      Generator = {
+                          [PSCustomObject]@{
+                              DirectiveType = 'Autohat'
+                              BillingArea = $Matches[1]
+                              Hat = $Matches[2]
+                          }
+                      }}
+    }
+
+    if (-not $directives.ContainsKey($DirectiveType)) {
+        throw "Implementation missing for directive type '$DirectiveType'!"
+    }
+
+    # doing Select-String and then using the regex again to populate $Matches is *much* faster than using Where-Object
+    Get-Content $DAYLOG_FILE | Select-String $directives[$DirectiveType].Regex | Foreach-Object {
+        $_ -match $directives[$DirectiveType].Regex | Out-Null
+        Write-Output (& $directives[$DirectiveType].Generator)
+    }
+}
+
+
+<#
+.SYNOPSIS
     Return objects for Daylog entries matching your criteria.
 
 .DESCRIPTION
@@ -546,3 +587,4 @@ Set-Alias -Name fdl -Value Find-Daylog
 Set-Alias -Name edl -Value Edit-Daylog
 Set-Alias -Name fds -Value Format-DaylogTimeSummary
 Set-Alias -Name fdt -Value Format-DaylogTimecard
+Set-Alias -Name fdd -Value Find-DaylogDirectives
