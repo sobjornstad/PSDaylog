@@ -39,6 +39,7 @@ function Read-Daylog
     $itemBilling = @{}
     $hats = [System.Collections.ArrayList]@()
     $lastPunchTime = $null
+    $autohatMap = @{}
 
     $on = 'none'
     $index = 1
@@ -70,6 +71,11 @@ function Read-Daylog
                 $lastDate = $itemDate
             }
 
+            '^!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)' {
+                $autohatMap[$Matches[1]] = $Matches[2]
+                continue
+            }
+
             ' (?<!=)=([a-zA-Z]+[a-zA-Z0-9]*)' {
                 $itemName = $Matches[1].Trim('=')
             }
@@ -87,12 +93,22 @@ function Read-Daylog
                 [timespan]$sinceLastPunch = $itemDate - $lastPunchTime
                 [decimal]$hours = [math]::Round($sinceLastPunch.TotalHours, 2)
                 $itemBilling.Add($billedTo, $hours)
+
+                if ($autohatMap.ContainsKey($Matches[1]) -and
+                        -not $hats.Contains($autohatMap[$Matches[1]])) {
+                    $hats.Add($autohatMap[$Matches[1]])
+                }
             }
 
             '(?<!\$)\$([a-zA-Z0-9]+)~(?:([0-9]+)h)?(?:([0-9]+)m)?' {
                 [string]$billedTo, [int]$billedHours, [int]$billedMinutes = $Matches[1..3]
                 [decimal]$hours = [math]::Round($billedHours + $billedMinutes / 60, 2)
                 $itemBilling.Add($billedTo, $hours)
+
+                if ($autohatMap.ContainsKey($Matches[1]) -and
+                        -not $hats.Contains($autohatMap[$Matches[1]])) {
+                    $hats.Add($autohatMap[$Matches[1]])
+                }
             }
 
             '^#end' {
