@@ -4,7 +4,8 @@
     - Find a way to reconcile spaces in colon-attributes (brackets?)
     - Throw an error if dates/times are (significantly?) out of order.
     - Allow autohatting multiple hats.
-    - Margin calculation.
+    - Tweak margin calculation so it doesn't count the remaining hours not worked today. This will require a directive
+      to indicate what hour of the day you end work.
 #>
 
 
@@ -579,6 +580,17 @@ function Format-DaylogTimecard
     is essentially equivalent to passing the output through
     'Where-Object { $_.BillingArea -ne 'Total' }'.
 
+.PARAMETER Margin
+    In addition to the total, show the total nominal work hours in this
+    period and the difference between your worked hours and the nominal
+    hours. Use !daylength directives in your daylog to indicate your nominal
+    hours (a directive applies to all future entries until overridden).
+
+    Note that this option is not meaningful if you filter your daylog entries
+    by a non-time dimension -- it will almost certainly show you have a huge
+    negative margin since it counts all the time you weren't working on the
+    specific thing you searched for as time scheduled but not worked.
+
 .EXAMPLE
     Show the time you've spent on each billing area since the beginning of the
     daylog:
@@ -600,11 +612,17 @@ function Format-DaylogTimeSummary
     param(
         [Parameter(ValueFromPipeline)]
         [PSCustomObject[]]$EntriesToSearch = (Find-Daylog),
-        [switch]$NoTotal
+
+        [switch]$NoTotal = $false,
+
+        [switch]$Margin = $false
     )
 
     begin {
         $times = @{}
+        $DayLengths = (Read-DayLength)
+        [decimal]$daylength = 0
+        $seenDays = [System.Collections.Generic.HashSet[datetime]]::new()
     }
 
     process {
@@ -617,22 +635,32 @@ function Format-DaylogTimeSummary
             }
             $times[$category] = $currentValue + $hours
         }
+        if (-not $seenDays.Contains($_.Timestamp.Date)) {
+            $daylength += Get-DayLengthForLine -Index $_.Line -DayLengths $DayLengths
+            $seenDays.Add($_.Timestamp.Date) | Out-Null
+        }
     }
 
     end {
-        $times.GetEnumerator() | Foreach-Object {
-            Write-Output ([PSCustomObject]@{
+        function constructTimeSummaryEntry ([string]$BillingArea, [decimal]$Hours) {
+            return ([PSCustomObject]@{
                 PSTypeName = 'TimeSummaryEntry'
-                BillingArea = $_.Key
-                Hours = $_.Value
+                BillingArea = $BillingArea
+                Hours = $Hours
             })
         }
+
+        $times.GetEnumerator() | Foreach-Object {
+            Write-Output (constructTimeSummaryEntry -BillingArea $_.Key -Hours $_.Value)
+        }
+
+        $hoursWorked = ($times.Values | Measure-Object -Sum).Sum
         if (-not $NoTotal) {
-            Write-Output ([PSCustomObject]@{
-                PSTypeName = 'TimeSummaryEntry'
-                BillingArea = 'Total'
-                Hours = ($times.Values | Measure-Object -Sum).Sum
-            })
+            Write-Output (constructTimeSummaryEntry -BillingArea 'Total' -Hours $hoursWorked)
+        }
+        if ($Margin) {
+            Write-Output (constructTimeSummaryEntry -BillingArea 'NominalWorkHours' -Hours $daylength)
+            Write-Output (constructTimeSummaryEntry -BillingArea 'Margin' -Hours ($hoursWorked - $daylength))
         }
     }
 }
