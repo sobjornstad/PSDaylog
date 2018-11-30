@@ -1,9 +1,10 @@
 ﻿<#
     TODO
     - Have a way to get all used fields (and maybe their frequency).
-    - Punch types? (as a field)
-    - Find a way to reconcile spaces in colon-attributes
+    - Find a way to reconcile spaces in colon-attributes (brackets?)
     - Throw an error if dates/times are (significantly?) out of order.
+    - Allow autohatting multiple hats.
+    - Margin calculation.
 #>
 
 
@@ -12,6 +13,22 @@
 [string]$DAYLOG_FILE = "I:\fsroot\Job\Daylog\daylog.txt"
 [float]$ROUNDING_ERROR_TOLERANCE = 0.02
 [float]$BREAK_TIME = 0.42
+
+
+function Convert-HoursMinutesToDecimal
+{
+    param(
+        [Parameter(Mandatory)]
+        [ValidateRange(0, [int]::MaxValue)]
+        [int]$Hours,
+
+        [Parameter(Mandatory)]
+        [ValidateRange(0, 59)]
+        [int]$Minutes
+    )
+
+    return [decimal]([math]::Round($Hours + $Minutes / 60, 2))
+}
 
 
 function Get-Timestamp
@@ -23,6 +40,45 @@ function Get-Timestamp
 function Format-Accumulated ([System.Collections.Generic.List[string]]$acc)
 {
     return [string]::Join("`r`n", $acc)
+}
+
+
+function Read-DayLength
+{
+    [int]$index = 1
+    switch -Regex (Get-Content $DAYLOG_FILE) {
+        '^!daylength\s+(?:(?<Hours>[0-9]+)h)?(?:(?<Minutes>[0-9]+)m)?\s*$' {
+            Write-Output ([PSCustomObject]@{
+                StartingAtLine = $index
+                Value = (Convert-HoursMinutesToDecimal $Matches.Hours $Matches.Minutes)
+            })
+        }
+        '.*' {
+            $index++
+        }
+    }
+}
+
+
+function Get-DayLengthForLine
+{
+    param(
+        [Parameter(Mandatory)]
+        [ValidateRange(1, [int]::MaxValue)]
+        [int]$Index,
+
+        [PSCustomObject[]]$DayLengths = (Read-DayLength)
+    )
+
+    $lastLength = $null
+    foreach ($length in $DayLengths) {
+        if ($length.StartingAtLine -gt $Index) {
+            return $lastLength.Value
+        } else {
+            $lastLength = $length
+        }
+    }
+    return $lastLength.Value
 }
 
 
@@ -102,8 +158,7 @@ function Read-Daylog
 
             '(?<!\$)\$([a-zA-Z0-9]+)~(?:([0-9]+)h)?(?:([0-9]+)m)?' {
                 [string]$billedTo, [int]$billedHours, [int]$billedMinutes = $Matches[1..3]
-                [decimal]$hours = [math]::Round($billedHours + $billedMinutes / 60, 2)
-                $itemBilling.Add($billedTo, $hours) | Out-Null
+                $itemBilling.Add($billedTo, (Convert-HoursMinutesToDecimal $billedHours $billedMinutes)) | Out-Null
 
                 if ($autohatMap.ContainsKey($Matches[1]) -and
                         -not $hats.Contains($autohatMap[$Matches[1]])) {
