@@ -137,8 +137,13 @@ function Read-Daylog
                 $itemName = $Matches[1].Trim('=')
             }
 
-            '(:[a-zA-Z0-9]+) ([@a-zA-Z0-9]+)' {
-                $accumulatedProperties[($Matches[1].Trim(':'))] = $Matches[2]
+            ':(?<PropertyName>[a-zA-Z0-9]+) (?<PropertyValue>[@a-zA-Z0-9]+)' {
+                $accumulatedProperties[$Matches.PropertyName] = if (
+                        $accumulatedProperties.ContainsKey($Matches.PropertyName)) {
+                    @($accumulatedProperties[$Matches.PropertyName]) + @($Matches.PropertyValue)
+                } else {
+                    $Matches.PropertyValue
+                }
             }
 
             '\^([a-zA-Z0-9]+)' {
@@ -230,8 +235,8 @@ function Add-ResolvedMarkerFromList ([Parameter(Mandatory, ValueFromPipeline)][P
 
     process {
         $allItems.Add($_) | Out-Null
-        if ($DaylogItem.Resolves) {
-            $resolvedNames.Add($DaylogItem.resolves.Trim().Trim('@')) | Out-Null
+        foreach ($resolvedItem in $DaylogItem.Resolves) {
+            $resolvedNames.Add($resolvedItem.Trim().Trim('@')) | Out-Null
         }
     }
 
