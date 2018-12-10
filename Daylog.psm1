@@ -106,11 +106,7 @@ function Read-Daylog
         }
 
         switch -Regex ($line) {
-            '^#end (done|punch|meeting)' {
-                $lastPunchTime = $itemDate
-            }
-
-            '^#end' {
+            '^#end\s+(.*)' {
                 $endswhat = $_ -replace '^\#end (.*)\s*','$1'
                 if ($endswhat -ne $on) {
                     throw "Syntax error on line ${index}: '$on' block ended by '$endswhat'"
@@ -153,7 +149,9 @@ function Read-Daylog
                 $hats.Clear()
                 $itemName = $null
 
-                break
+                if ($Matches[1] -in 'done','punch','meeting') {
+                    $lastPunchTime = $itemDate
+                }
             }
 
             '^#(punch|todo|solution|done|notes|meeting)\s+(20[0-9]{2}-[01][1-9]-[0-3][0-9] [0-2][0-9]:[0-5][0-9])' {
