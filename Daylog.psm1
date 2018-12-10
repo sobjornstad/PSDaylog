@@ -106,6 +106,56 @@ function Read-Daylog
         }
 
         switch -Regex ($line) {
+            '^#end (done|punch|meeting)' {
+                $lastPunchTime = $itemDate
+            }
+
+            '^#end' {
+                $endswhat = $_ -replace '^\#end (.*)\s*','$1'
+                if ($endswhat -ne $on) {
+                    throw "Syntax error on line ${index}: '$on' block ended by '$endswhat'"
+                }
+
+                if ($itemBilling.Count -gt 1) {
+                    $specifiedHours = ($itemBilling.Values | Measure-Object -Sum).Sum
+                    $actualHoursElapsed = [math]::Round(($itemDate - $lastPunchTime).TotalHours, 2)
+                    if ([math]::Abs($specifiedHours - $actualHoursElapsed) -gt $ROUNDING_ERROR_TOLERANCE) {
+                        Write-Warning ("Split billing for item beginning on line ${itemStartLine} does not add up " +
+                                       "to the total time elapsed since the last billable item " +
+                                       "($specifiedHours vs $actualHoursElapsed). If you didn't intend to " +
+                                       "use split billing, did you include a dollar amount without escaping " +
+                                       "the dollar sign (`$`$)?")
+                    }
+                }
+
+                $thisName = if ($itemName) { $itemName } else { "Line$itemStartLine" }
+
+                $obj = [PSCustomObject]@{
+                    Type = $on
+                    Line = $itemStartLine
+                    Name = $thisName
+                    Timestamp = $itemDate
+                    Billing = $itemBilling.Clone()
+                    Content = (Format-Accumulated $accumulator)
+                }
+                if ($hats) {
+                    $obj | Add-Member -MemberType NoteProperty -Name Hats -Value $hats.Clone()
+                }
+                foreach ($property in $accumulatedProperties.GetEnumerator()) {
+                    $obj | Add-Member -MemberType NoteProperty -Name $property.Key -Value $property.Value
+                }
+                Write-Output $obj
+
+                $on = 'none'
+                $accumulator.Clear()
+                $accumulatedProperties.Clear()
+                $itemBilling.Clear()
+                $hats.Clear()
+                $itemName = $null
+
+                break
+            }
+
             '^#(punch|todo|solution|done|notes|meeting)\s+(20[0-9]{2}-[01][1-9]-[0-3][0-9] [0-2][0-9]:[0-5][0-9])' {
                 # we were in 'none', so we have to add it now
                 $accumulator.Add($line) | Out-Null
@@ -172,53 +222,6 @@ function Read-Daylog
                 }
             }
 
-            '^#end' {
-                $endswhat = $_ -replace '^\#end (.*)\s*','$1'
-                if ($endswhat -ne $on) {
-                    throw "Syntax error on line ${index}: '$on' block ended by '$endswhat'"
-                }
-
-                if ($itemBilling.Count -gt 1) {
-                    $specifiedHours = ($itemBilling.Values | Measure-Object -Sum).Sum
-                    $actualHoursElapsed = [math]::Round(($itemDate - $lastPunchTime).TotalHours, 2)
-                    if ([math]::Abs($specifiedHours - $actualHoursElapsed) -gt $ROUNDING_ERROR_TOLERANCE) {
-                        Write-Warning ("Split billing for item beginning on line ${itemStartLine} does not add up " +
-                                       "to the total time elapsed since the last billable item " +
-                                       "($specifiedHours vs $actualHoursElapsed). If you didn't intend to " +
-                                       "use split billing, did you include a dollar amount without escaping " +
-                                       "the dollar sign (`$`$)?")
-                    }
-                }
-
-                $thisName = if ($itemName) { $itemName } else { "Line$itemStartLine" }
-
-                $obj = [PSCustomObject]@{
-                    Type = $on
-                    Line = $itemStartLine
-                    Name = $thisName
-                    Timestamp = $itemDate
-                    Billing = $itemBilling.Clone()
-                    Content = (Format-Accumulated $accumulator)
-                }
-                if ($hats) {
-                    $obj | Add-Member -MemberType NoteProperty -Name Hats -Value $hats.Clone()
-                }
-                foreach ($property in $accumulatedProperties.GetEnumerator()) {
-                    $obj | Add-Member -MemberType NoteProperty -Name $property.Key -Value $property.Value
-                }
-                Write-Output $obj
-
-                $on = 'none'
-                $accumulator.Clear()
-                $accumulatedProperties.Clear()
-                $itemBilling.Clear()
-                $hats.Clear()
-                $itemName = $null
-            }
-
-            '^#end (done|punch|meeting)' {
-                $lastPunchTime = $itemDate
-            }
         }
         $index++
     }
