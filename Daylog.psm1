@@ -180,7 +180,7 @@ function Read-Daylog
 
             '^!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)' {
                 $autohatMap[$Matches[1]] = $Matches[2]
-                continue
+                break
             }
 
             ' (?<!=)=([a-zA-Z]+[a-zA-Z0-9]*)' {
