@@ -106,73 +106,7 @@ function Read-Daylog
         }
 
         switch -Regex ($line) {
-            '^#(punch|todo|solution|done|notes|meeting)\s+(20[0-9]{2}-[01][1-9]-[0-3][0-9] [0-2][0-9]:[0-5][0-9])' {
-                # we were in 'none', so we have to add it now
-                $accumulator.Add($line) | Out-Null
-                $itemStartLine = $index
-                $on = $Matches[1]
-                try {
-                    $itemDate = [datetime]::ParseExact(
-                        $Matches[2],
-                        "yyyy-MM-dd HH:mm",
-                        [System.Globalization.CultureInfo]::InvariantCulture)
-                } catch [System.FormatException] {
-                    throw "Syntax error on line ${index}: invalid date format '$Matches[2]'."
-                }
-
-                if ($lastDate.Date -ne $itemDate.Date) {
-                    if ($null -ne $lastDate) {
-                        Write-Output (New-BreakItem -Timestamp $lastDate)
-                    }
-                }
-                $lastDate = $itemDate
-            }
-
-            '^!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)' {
-                $autohatMap[$Matches[1]] = $Matches[2]
-                continue
-            }
-
-            ' (?<!=)=([a-zA-Z]+[a-zA-Z0-9]*)' {
-                $itemName = $Matches[1].Trim('=')
-            }
-
-            ':(?<PropertyName>[a-zA-Z0-9]+) (?<PropertyValue>[@a-zA-Z0-9]+)' {
-                $accumulatedProperties[$Matches.PropertyName] = if (
-                        $accumulatedProperties.ContainsKey($Matches.PropertyName)) {
-                    @($accumulatedProperties[$Matches.PropertyName]) + @($Matches.PropertyValue)
-                } else {
-                    $Matches.PropertyValue
-                }
-            }
-
-            '\^([a-zA-Z0-9]+)' {
-                $hats.Add($Matches[1]) | Out-Null
-            }
-
-            '(?<!\$)\$([a-zA-Z0-9]+)(\s|$)' {
-                [string]$billedTo = $Matches[1]
-                [timespan]$sinceLastPunch = $itemDate - $lastPunchTime
-                [decimal]$hours = [math]::Round($sinceLastPunch.TotalHours, 2)
-                $itemBilling.Add($billedTo, $hours) | Out-Null
-
-                if ($autohatMap.ContainsKey($Matches[1]) -and
-                        -not $hats.Contains($autohatMap[$Matches[1]])) {
-                    $hats.Add($autohatMap[$Matches[1]]) | Out-Null
-                }
-            }
-
-            '(?<!\$)\$([a-zA-Z0-9]+)~(?:([0-9]+)h)?(?:([0-9]+)m)?' {
-                [string]$billedTo, [int]$billedHours, [int]$billedMinutes = $Matches[1..3]
-                $itemBilling.Add($billedTo, (Convert-HoursMinutesToDecimal $billedHours $billedMinutes)) | Out-Null
-
-                if ($autohatMap.ContainsKey($Matches[1]) -and
-                        -not $hats.Contains($autohatMap[$Matches[1]])) {
-                    $hats.Add($autohatMap[$Matches[1]]) | Out-Null
-                }
-            }
-
-            '^#end' {
+            '^#end\s+(.*)' {
                 $endswhat = $_ -replace '^\#end (.*)\s*','$1'
                 if ($endswhat -ne $on) {
                     throw "Syntax error on line ${index}: '$on' block ended by '$endswhat'"
@@ -214,11 +148,78 @@ function Read-Daylog
                 $itemBilling.Clear()
                 $hats.Clear()
                 $itemName = $null
+
+                if ($Matches[1] -in 'done','punch','meeting') {
+                    $lastPunchTime = $itemDate
+                }
             }
 
-            '^#end (done|punch|meeting)' {
-                $lastPunchTime = $itemDate
+            '^#(punch|todo|solution|done|notes|meeting)\s+(20[0-9]{2}-[01][1-9]-[0-3][0-9] [0-2][0-9]:[0-5][0-9])' {
+                # we were in 'none', so we have to add it now
+                $accumulator.Add($line) | Out-Null
+                $itemStartLine = $index
+                $on = $Matches[1]
+                try {
+                    $itemDate = [datetime]::ParseExact(
+                        $Matches[2],
+                        "yyyy-MM-dd HH:mm",
+                        [System.Globalization.CultureInfo]::InvariantCulture)
+                } catch [System.FormatException] {
+                    throw "Syntax error on line ${index}: invalid date format '$Matches[2]'."
+                }
+
+                if ($lastDate.Date -ne $itemDate.Date) {
+                    if ($null -ne $lastDate) {
+                        Write-Output (New-BreakItem -Timestamp $lastDate)
+                    }
+                }
+                $lastDate = $itemDate
             }
+
+            '^!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)' {
+                $autohatMap[$Matches[1]] = $Matches[2]
+                break
+            }
+
+            ' (?<!=)=([a-zA-Z]+[a-zA-Z0-9]*)' {
+                $itemName = $Matches[1].Trim('=')
+            }
+
+            ':(?<PropertyName>[a-zA-Z0-9]+) (?<PropertyValue>[@a-zA-Z0-9]+)' {
+                $accumulatedProperties[$Matches.PropertyName] = if (
+                        $accumulatedProperties.ContainsKey($Matches.PropertyName)) {
+                    @($accumulatedProperties[$Matches.PropertyName]) + @($Matches.PropertyValue)
+                } else {
+                    $Matches.PropertyValue
+                }
+            }
+
+            '\^([a-zA-Z0-9]+)' {
+                $hats.Add($Matches[1]) | Out-Null
+            }
+
+            '(?<!\$)\$([a-zA-Z0-9]+)(\s|$)' {
+                [string]$billedTo = $Matches[1]
+                [timespan]$sinceLastPunch = $itemDate - $lastPunchTime
+                [decimal]$hours = [math]::Round($sinceLastPunch.TotalHours, 2)
+                $itemBilling.Add($billedTo, $hours) | Out-Null
+
+                if ($autohatMap.ContainsKey($Matches[1]) -and
+                        -not $hats.Contains($autohatMap[$Matches[1]])) {
+                    $hats.Add($autohatMap[$Matches[1]]) | Out-Null
+                }
+            }
+
+            '(?<!\$)\$([a-zA-Z0-9]+)~(?:([0-9]+)h)?(?:([0-9]+)m)?' {
+                [string]$billedTo, [int]$billedHours, [int]$billedMinutes = $Matches[1..3]
+                $itemBilling.Add($billedTo, (Convert-HoursMinutesToDecimal $billedHours $billedMinutes)) | Out-Null
+
+                if ($autohatMap.ContainsKey($Matches[1]) -and
+                        -not $hats.Contains($autohatMap[$Matches[1]])) {
+                    $hats.Add($autohatMap[$Matches[1]]) | Out-Null
+                }
+            }
+
         }
         $index++
     }
