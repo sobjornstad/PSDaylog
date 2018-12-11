@@ -102,7 +102,7 @@ function Read-Daylog
     $index = 1
     foreach ($line in $daylogLines) {
         if ($on -ne 'none') {
-            $accumulator.Add($line) | Out-Null
+            $accumulator.Add($line) > $null
         }
 
         switch -Regex ($line) {
@@ -156,7 +156,7 @@ function Read-Daylog
 
             '^#(punch|todo|solution|done|notes|meeting)\s+(20[0-9]{2}-[01][1-9]-[0-3][0-9] [0-2][0-9]:[0-5][0-9])' {
                 # we were in 'none', so we have to add it now
-                $accumulator.Add($line) | Out-Null
+                $accumulator.Add($line) > $null
                 $itemStartLine = $index
                 $on = $Matches[1]
                 try {
@@ -195,28 +195,28 @@ function Read-Daylog
             }
 
             '\^([a-zA-Z0-9]+)' {
-                $hats.Add($Matches[1]) | Out-Null
+                $hats.Add($Matches[1]) > $null
             }
 
             '(?<!\$)\$([a-zA-Z0-9]+)(\s|$)' {
                 [string]$billedTo = $Matches[1]
                 [timespan]$sinceLastPunch = $itemDate - $lastPunchTime
                 [decimal]$hours = [math]::Round($sinceLastPunch.TotalHours, 2)
-                $itemBilling.Add($billedTo, $hours) | Out-Null
+                $itemBilling.Add($billedTo, $hours) > $null
 
                 if ($autohatMap.ContainsKey($Matches[1]) -and
                         -not $hats.Contains($autohatMap[$Matches[1]])) {
-                    $hats.Add($autohatMap[$Matches[1]]) | Out-Null
+                    $hats.Add($autohatMap[$Matches[1]]) > $null
                 }
             }
 
             '(?<!\$)\$([a-zA-Z0-9]+)~(?:([0-9]+)h)?(?:([0-9]+)m)?' {
                 [string]$billedTo, [int]$billedHours, [int]$billedMinutes = $Matches[1..3]
-                $itemBilling.Add($billedTo, (Convert-HoursMinutesToDecimal $billedHours $billedMinutes)) | Out-Null
+                $itemBilling.Add($billedTo, (Convert-HoursMinutesToDecimal $billedHours $billedMinutes)) > $null
 
                 if ($autohatMap.ContainsKey($Matches[1]) -and
                         -not $hats.Contains($autohatMap[$Matches[1]])) {
-                    $hats.Add($autohatMap[$Matches[1]]) | Out-Null
+                    $hats.Add($autohatMap[$Matches[1]]) > $null
                 }
             }
 
@@ -235,9 +235,9 @@ function Add-ResolvedMarkerFromList ([Parameter(Mandatory, ValueFromPipeline)][P
     }
 
     process {
-        $allItems.Add($_) | Out-Null
+        $allItems.Add($_) > $null
         foreach ($resolvedItem in $DaylogItem.Resolves) {
-            $resolvedNames.Add($resolvedItem.Trim().Trim('@')) | Out-Null
+            $resolvedNames.Add($resolvedItem.Trim().Trim('@')) > $null
         }
     }
 
@@ -313,7 +313,7 @@ function Find-DaylogDirectives
 
     # doing Select-String and then using the regex again to populate $Matches is *much* faster than using Where-Object
     Get-Content $DAYLOG_FILE | Select-String $directives[$DirectiveType].Regex | Foreach-Object {
-        $_ -match $directives[$DirectiveType].Regex | Out-Null
+        $_ -match $directives[$DirectiveType].Regex > $null
         Write-Output (& $directives[$DirectiveType].Generator)
     }
 }
@@ -541,7 +541,7 @@ function Format-DaylogTimecard
         $accumulator = [System.Collections.ArrayList]@()
     }
     process {
-        $accumulator.Add($ValueToFormat) | Out-Null
+        $accumulator.Add($ValueToFormat) > $null
     }
 
     end {
@@ -643,7 +643,7 @@ function Format-DaylogTimeSummary
         }
         if (-not $seenDays.Contains($_.Timestamp.Date)) {
             $daylength += Get-DayLengthForLine -Index $_.Line -DayLengths $DayLengths
-            $seenDays.Add($_.Timestamp.Date) | Out-Null
+            $seenDays.Add($_.Timestamp.Date) > $null
         }
     }
 
