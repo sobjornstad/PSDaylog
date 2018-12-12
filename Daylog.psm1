@@ -436,9 +436,7 @@ function Find-Daylog
         # number of days since the last (or current) Sunday.
         [int]$daysSinceSunday = [datetime]::Today.DayOfWeek
         $MinDate = [datetime]::Today.Subtract([timespan]::FromDays($daysSinceSunday))
-        $MaxDate = [datetime]::Now
     }
-
 
     # Create objects from the file and filter based on parameters.
     $objs = Read-Daylog | Add-ResolvedMarkerFromList
