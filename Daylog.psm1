@@ -4,8 +4,6 @@
     - Find a way to reconcile spaces in colon-attributes (brackets?)
     - Throw an error if dates/times are (significantly?) out of order.
     - Allow autohatting multiple hats.
-    - Tweak margin calculation so it doesn't count the remaining hours not worked today. This will require a directive
-      to indicate what hour of the day you end work.
 #>
 
 
@@ -83,7 +81,7 @@ function Get-DayLengthForLine
 }
 
 
-function Read-Daylog
+function parseDaylog
 {
     $daylogLines = (Get-Content $DAYLOG_FILE)
 
@@ -230,6 +228,21 @@ function Read-Daylog
     }
 
     Write-Output (New-BreakItem -Timestamp $lastDate)
+}
+
+
+$script:daylogCache = @{Hash = ''; Data = $null}
+function Read-Daylog
+{
+    $daylogHash = (Get-FileHash $DAYLOG_FILE).Hash
+    if ($daylogHash -eq $script:daylogCache.Hash) {
+        return $script:daylogCache.Data
+    }
+
+    $parsed = parseDaylog | Add-ResolvedMarkerFromList
+    $script:daylogCache.Data = $parsed
+    $script:daylogCache.Hash = $daylogHash
+    return $parsed
 }
 
 function Add-ResolvedMarkerFromList ([Parameter(Mandatory, ValueFromPipeline)][PSCustomObject]$DaylogItem)
@@ -444,7 +457,7 @@ function Find-Daylog
     }
 
     # Create objects from the file and filter based on parameters.
-    $objs = Read-Daylog | Add-ResolvedMarkerFromList
+    $objs = Read-Daylog
 
     if ($Type) {
         $objs = $objs | Where-Object { $_.Type -eq $Type }
