@@ -42,23 +42,6 @@ function Format-Accumulated ([System.Collections.Generic.List[string]]$acc)
 }
 
 
-function Read-DayLength
-{
-    [int]$index = 1
-    switch -Regex (Get-Content $DAYLOG_FILE) {
-        '^!daylength\s+(?:(?<Hours>[0-9]+)h)?(?:(?<Minutes>[0-9]+)m)?\s*$' {
-            Write-Output ([PSCustomObject]@{
-                StartingAtLine = $index
-                Value = (Convert-HoursMinutesToDecimal $Matches.Hours $Matches.Minutes)
-            })
-        }
-        '.*' {
-            $index++
-        }
-    }
-}
-
-
 function Get-DayLengthForLine
 {
     param(
@@ -66,18 +49,18 @@ function Get-DayLengthForLine
         [ValidateRange(1, [int]::MaxValue)]
         [int]$Index,
 
-        [PSCustomObject[]]$DayLengths = (Read-DayLength)
+        [PSCustomObject[]]$DayLengths = (Find-DaylogDirectives -DirectiveType Daylength)
     )
 
     $lastLength = $null
     foreach ($length in $DayLengths) {
-        if ($length.StartingAtLine -gt $Index) {
-            return $lastLength.Value
+        if ($length.LineNumber -gt $Index) {
+            return $lastLength.Time
         } else {
             $lastLength = $length
         }
     }
-    return $lastLength.Value
+    return $lastLength.Time
 }
 
 
@@ -311,17 +294,30 @@ function Edit-Daylog
 function Find-DaylogDirectives
 {
     param(
-        [Parameter(Mandatory)][ValidateSet('Autohat')][string]$DirectiveType
+        [Parameter(Mandatory)]
+        [ValidateSet('Autohat', 'Daylength')]
+        [string]$DirectiveType
     )
 
     $directives = @{
-        'Autohat' = @{Regex = '!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)'
+        Autohat   = @{Regex = '!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)'
                       Generator = {
-                          [PSCustomObject]@{
-                              DirectiveType = 'Autohat'
-                              BillingArea = $Matches[1]
-                              Hat = $Matches[2]
-                          }
+                        param($LineNumber)
+                        [PSCustomObject]@{
+                            DirectiveType = 'Autohat'
+                            LineNumber = $LineNumber
+                            BillingArea = $Matches[1]
+                            Hat = $Matches[2]
+                        }
+                      }}
+        Daylength = @{Regex = '^!daylength\s+(?:(?<Hours>[0-9]+)h)?(?:(?<Minutes>[0-9]+)m)?\s*$'
+                      Generator = {
+                        param($LineNumber)
+                        [PSCustomObject]@{
+                            DirectiveType = 'Daylength'
+                            LineNumber = $LineNumber
+                            Time = (Convert-HoursMinutesToDecimal $Matches.Hours $Matches.Minutes)
+                        }
                       }}
     }
 
@@ -330,9 +326,12 @@ function Find-DaylogDirectives
     }
 
     # doing Select-String and then using the regex again to populate $Matches is *much* faster than using Where-Object
-    Get-Content $DAYLOG_FILE | Select-String $directives[$DirectiveType].Regex | Foreach-Object {
-        $_ -match $directives[$DirectiveType].Regex > $null
-        Write-Output (& $directives[$DirectiveType].Generator)
+    Get-Content $DAYLOG_FILE |
+        Select-String $directives[$DirectiveType].Regex |
+        Select-Object Line, LineNumber |
+        Foreach-Object {
+            $_.Line -match $directives[$DirectiveType].Regex > $null
+            Write-Output (& $directives[$DirectiveType].Generator $_.LineNumber)
     }
 }
 
@@ -642,7 +641,7 @@ function Format-DaylogTimeSummary
 
     begin {
         $times = @{}
-        $DayLengths = (Read-DayLength)
+        $DayLengths = (Find-DaylogDirectives -DirectiveType Daylength)
         [decimal]$daylength = 0
         $seenDays = [System.Collections.Generic.HashSet[datetime]]::new()
     }
