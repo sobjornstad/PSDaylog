@@ -367,7 +367,10 @@ function Find-DaylogDirectives
     Return only entries dated after the specified .NET datetime.
 
 .PARAMETER MaxDate
-    Return only entries dated before the specified .NET datetime.
+    Return only entries dated before the specified .NET datetime. Note that
+    if you specify a date only, the range is effectively exclusive since it
+    matches only midnight. In other words, "2018-12-15" will include all
+    entries on the 14th and entries dated exactly midnight on the 15th.
 
 .PARAMETER Today
     Shorthand for '-MinDate [datetime]::Today'.
