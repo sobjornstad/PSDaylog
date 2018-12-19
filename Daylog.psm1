@@ -3,6 +3,8 @@
     - Have a way to get all used fields (and maybe their frequency).
     - Find a way to reconcile spaces in colon-attributes (brackets?)
     - Throw an error if dates/times are (significantly?) out of order.
+    - Throw an exception if a period is absurdly long and indicates a likely error (say, worked for 20 hours).
+    - -ThisIm and -ThisQuarter switches (-ThisIm might be trickier logic than is worth it though)
     - Allow autohatting multiple hats.
 #>
 
