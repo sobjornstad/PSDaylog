@@ -462,26 +462,26 @@ function Find-Daylog
     $objs = Read-Daylog
 
     if ($Type) {
-        $objs = $objs | Where-Object { $_.Type -eq $Type }
+        $objs = $objs | Where-Object Type -eq $Type
     }
     if ($NoBreak) {
-        $objs = $objs | Where-Object { $_.Type -ne 'break' }
+        $objs = $objs | Where-Object Type -ne 'break'
     }
     if ($Contains) {
-        $objs = $objs | Where-Object { $_.Content -match [regex]::Escape($Contains) }
+        $objs = $objs | Where-Object Content -match ([regex]::Escape($Contains))
     }
     if ($Match) {
-        $objs = $objs | Where-Object { $_.Content -match $Match }
+        $objs = $objs | Where-Object Content -match $Match
     }
     if ($Attribute) {
         $field, $value = $Attribute.Split('=')
-        $objs = $objs | Where-Object { $_.$field -match $value }
+        $objs = $objs | Where-Object $field -match $value
     }
     if ($MinDate) {
-        $objs = $objs | Where-Object { $_.Timestamp -ge $MinDate }
+        $objs = $objs | Where-Object Timestamp -ge $MinDate
     }
     if ($MaxDate) {
-        $objs = $objs | Where-Object { $_.Timestamp -le $MaxDate }
+        $objs = $objs | Where-Object Timestamp -le $MaxDate
     }
     if ($BilledTo) {
         $objs = $objs | Where-Object { $_.Billing.ContainsKey($BilledTo) }
@@ -490,10 +490,10 @@ function Find-Daylog
         $objs = $objs | Where-Object { $_.Type -eq 'todo' -and $_.Resolved -eq $false }
     }
     if ($Name) {
-        $objs = $objs | Where-Object { $_.Name -eq $Name }
+        $objs = $objs | Where-Object Name -eq $Name
     }
     if ($Hat) {
-        $objs = $objs | Where-Object { $_.Hats -contains $Hat }
+        $objs = $objs | Where-Object Hats -contains $Hat
     }
 
     # Output the results.
