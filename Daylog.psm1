@@ -3,7 +3,6 @@
     - Have a way to get all used fields (and maybe their frequency).
     - Find a way to reconcile spaces in colon-attributes (brackets?)
     - Throw an error if dates/times are (significantly?) out of order.
-    - -ThisIm and -ThisQuarter switches (-ThisIm might be trickier logic than is worth it though)
     - Allow autohatting multiple hats.
 #>
 
@@ -432,6 +431,8 @@ function Find-Daylog
 
         [switch]$ThisWeek = $false,
 
+        [switch]$ThisQuarter = $false,
+
         [string]$BilledTo = $null,
 
         [switch]$Content = $false,
@@ -464,6 +465,16 @@ function Find-Daylog
         # number of days since the last (or current) Sunday.
         [int]$daysSinceSunday = [datetime]::Today.DayOfWeek
         $MinDate = [datetime]::Today.Subtract([timespan]::FromDays($daysSinceSunday))
+    }
+
+    if ($ThisQuarter) {
+        $now = [datetime]::Today
+        $MinDate, $MaxDate = switch ($now.Month) {
+            {$_ -in 1..3}   { [datetime]::new($now.Year, 1, 1), [datetime]::new($now.Year, 4, 1) }
+            {$_ -in 4..6}   { [datetime]::new($now.Year, 4, 1), [datetime]::new($now.Year, 7, 1) }
+            {$_ -in 7..9}   { [datetime]::new($now.Year, 7, 1), [datetime]::new($now.Year, 9, 1) }
+            {$_ -in 10..12} { [datetime]::new($now.Year, 9, 1), [datetime]::new($now.Year+1, 1, 1) }
+        }
     }
 
     # Create objects from the file and filter based on parameters.
