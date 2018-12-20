@@ -2,7 +2,6 @@
     TODO
     - Have a way to get all used fields (and maybe their frequency).
     - Find a way to reconcile spaces in colon-attributes (brackets?)
-    - Throw an error if dates/times are (significantly?) out of order.
     - Allow autohatting multiple hats.
 #>
 
@@ -11,6 +10,7 @@
 [string]$EDITOR = "code"
 [string]$DAYLOG_FILE = "I:\fsroot\Job\Daylog\daylog.txt"
 [float]$ROUNDING_ERROR_TOLERANCE = 0.02
+[timespan]$DATE_ORDERING_TOLERANCE = [timespan]::new(0, 0, 15, 0)
 [float]$BREAK_TIME = 0.42
 [float]$LONGEST_EXPECTED_PERIOD_HOURS = 8.5
 
@@ -159,6 +159,11 @@ function parseDaylog
                         [System.Globalization.CultureInfo]::InvariantCulture)
                 } catch [System.FormatException] {
                     throw "Syntax error on line ${index}: invalid date format '$Matches[2]'."
+                }
+
+                if ($lastDate -gt $itemDate+$DATE_ORDERING_TOLERANCE) {
+                    Write-Warning ("Item beginning at line ${index} has a significantly earlier date than " +
+                                   "the entry preceding it. Did you enter the wrong date or time?")
                 }
 
                 if ($lastDate.Date -ne $itemDate.Date) {
