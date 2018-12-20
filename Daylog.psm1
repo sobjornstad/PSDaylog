@@ -3,7 +3,6 @@
     - Have a way to get all used fields (and maybe their frequency).
     - Find a way to reconcile spaces in colon-attributes (brackets?)
     - Throw an error if dates/times are (significantly?) out of order.
-    - Throw an exception if a period is absurdly long and indicates a likely error (say, worked for 20 hours).
     - -ThisIm and -ThisQuarter switches (-ThisIm might be trickier logic than is worth it though)
     - Allow autohatting multiple hats.
 #>
@@ -14,6 +13,7 @@
 [string]$DAYLOG_FILE = "I:\fsroot\Job\Daylog\daylog.txt"
 [float]$ROUNDING_ERROR_TOLERANCE = 0.02
 [float]$BREAK_TIME = 0.42
+[float]$LONGEST_EXPECTED_PERIOD_HOURS = 8.5
 
 
 function Convert-HoursMinutesToDecimal
@@ -95,13 +95,19 @@ function parseDaylog
                     throw "Syntax error on line ${index}: '$on' block ended by '$endswhat'"
                 }
 
+                # do some validation
+                $totalHoursBilled = ($itemBilling.Values | Measure-Object -Sum).Sum
+                if ($totalHoursBilled -gt $LONGEST_EXPECTED_PERIOD_HOURS) {
+                    Write-Warning ("Item beginning on line $itemStartLine bills more than " +
+                                   "$LONGEST_EXPECTED_PERIOD_HOURS hours ($totalHoursBilled). " +
+                                   "Did you enter the date and time incorrectly?")
+                }
                 if ($itemBilling.Count -gt 1) {
-                    $specifiedHours = ($itemBilling.Values | Measure-Object -Sum).Sum
                     $actualHoursElapsed = [math]::Round(($itemDate - $lastPunchTime).TotalHours, 2)
-                    if ([math]::Abs($specifiedHours - $actualHoursElapsed) -gt $ROUNDING_ERROR_TOLERANCE) {
+                    if ([math]::Abs($totalHoursBilled - $actualHoursElapsed) -gt $ROUNDING_ERROR_TOLERANCE) {
                         Write-Warning ("Split billing for item beginning on line ${itemStartLine} does not add up " +
                                        "to the total time elapsed since the last billable item " +
-                                       "($specifiedHours vs $actualHoursElapsed). If you didn't intend to " +
+                                       "($totalHoursBilled vs $actualHoursElapsed). If you didn't intend to " +
                                        "use split billing, did you include a dollar amount without escaping " +
                                        "the dollar sign (`$`$)?")
                     }
