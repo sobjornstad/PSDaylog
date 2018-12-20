@@ -1,7 +1,6 @@
 ﻿<#
     TODO
     - Have a way to get all used fields (and maybe their frequency).
-    - Find a way to reconcile spaces in colon-attributes (brackets?)
     - Allow autohatting multiple hats.
 #>
 
@@ -183,7 +182,7 @@ function parseDaylog
                 $itemName = $Matches[1].Trim('=')
             }
 
-            ':(?<PropertyName>[a-zA-Z0-9]+) (?<PropertyValue>[@a-zA-Z0-9]+)' {
+            ':(?<PropertyName>[a-zA-Z0-9]+) (?:(?<PropertyValue>[@a-zA-Z0-9]+)|"(?<PropertyValue>[^"]+)")' {
                 $accumulatedProperties[$Matches.PropertyName] = if (
                         $accumulatedProperties.ContainsKey($Matches.PropertyName)) {
                     @($accumulatedProperties[$Matches.PropertyName]) + @($Matches.PropertyValue)
