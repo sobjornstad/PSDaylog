@@ -195,7 +195,7 @@ function parseDaylog
                 $hats.Add($Matches[1]) > $null
             }
 
-            '(?<!\$)\$([a-zA-Z0-9]+)(\s|$)' {
+            '^\s*(?<!\$)\$([a-zA-Z0-9]+)(\s|$)' {
                 [string]$billedTo = $Matches[1]
                 [timespan]$sinceLastPunch = $itemDate - $lastPunchTime
                 [decimal]$hours = [math]::Round($sinceLastPunch.TotalHours, 2)
@@ -207,7 +207,7 @@ function parseDaylog
                 }
             }
 
-            '(?<!\$)\$([a-zA-Z0-9]+)~(?:([0-9]+)h)?(?:([0-9]+)m)?' {
+            '^\s*(?<!\$)\$([a-zA-Z0-9]+)~(?:([0-9]+)h)?(?:([0-9]+)m)?' {
                 [string]$billedTo, [int]$billedHours, [int]$billedMinutes = $Matches[1..3]
                 $itemBilling.Add($billedTo, (Convert-HoursMinutesToDecimal $billedHours $billedMinutes)) > $null
 
