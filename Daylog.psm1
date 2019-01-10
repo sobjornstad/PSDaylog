@@ -435,6 +435,8 @@ function Find-Daylog
 
         [switch]$ThisWeek = $false,
 
+        [switch]$ThisFortnight = $false,
+
         [switch]$ThisQuarter = $false,
 
         [string]$BilledTo = $null,
@@ -464,10 +466,13 @@ function Find-Daylog
         $MaxDate = [datetime]::Today
     }
 
-    if ($ThisWeek) {
+    if ($ThisWeek -or $ThisFortnight) {
         # DayOfWeek starts with Sunday at 0. So this is equivalent to the
         # number of days since the last (or current) Sunday.
         [int]$daysSinceSunday = [datetime]::Today.DayOfWeek
+        if ($ThisFortnight) {
+            $daysSinceSunday += 7
+        }
         $MinDate = [datetime]::Today.Subtract([timespan]::FromDays($daysSinceSunday))
     }
 
