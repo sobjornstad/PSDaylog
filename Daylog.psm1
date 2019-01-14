@@ -195,16 +195,23 @@ function parseDaylog
                 $hats.Add($Matches[1]) > $null
             }
 
-            '^\s*(?<!\$)\$([a-zA-Z0-9]+)(\s|$)' {
+            '^\s*(?<!\$)\$([a-zA-Z0-9]+)(~\*|\s|$)' {
                 [string]$billedTo = $Matches[1]
                 [timespan]$sinceLastPunch = $itemDate - $lastPunchTime
                 [decimal]$hours = [math]::Round($sinceLastPunch.TotalHours, 2)
+                if ($Matches[2] -eq '~*') {
+                    $hoursAlreadyBilled = ($itemBilling.Values | Measure-Object -Sum).Sum
+                    $hours = $hours - $hoursAlreadyBilled
+                }
                 $itemBilling.Add($billedTo, $hours) > $null
 
                 if ($autohatMap.ContainsKey($Matches[1]) -and
                         -not $hats.Contains($autohatMap[$Matches[1]])) {
                     $hats.Add($autohatMap[$Matches[1]]) > $null
                 }
+
+                # If using ~*, we don't want to hit the next case as well.
+                break
             }
 
             '^\s*(?<!\$)\$([a-zA-Z0-9]+)~(?:([0-9]+)h)?(?:([0-9]+)m)?' {
