@@ -566,10 +566,10 @@ function New-BreakItem ([datetime]$Timestamp)
 .PARAMETER ValueToFormat
     A stream of daylog entries.
 
-.PARAMETER TimesOnly
-    Do not include annotated information like total time and margin at the
-    end. This may be helpful if you're trying to do math on or take further
-    scripted action on the results.
+.PARAMETER NoTotal
+    Do not include the total information at the end. This may be helpful if
+    you're trying to do math on or take further scripted action on the
+    results.
 
 .EXAMPLE
     See a record of what you billed today:
@@ -578,7 +578,7 @@ function New-BreakItem ([datetime]$Timestamp)
     See how long on average you spend on Done items that mention Git and are
     billed to TeamSupport:
     PS> Find-Daylog -Type Done -Contains 'Git' -BilledTo TeamSupport |
-            Format-DaylogTimecard -TimesOnly |
+            Format-DaylogTimecard -NoTotal |
             Measure-Object -Property Time -Average
 #>
 function Format-DaylogTimecard
@@ -587,7 +587,7 @@ function Format-DaylogTimecard
         [Parameter(Mandatory, ValueFromPipeline)]
         [PSCustomObject]$ValueToFormat,
 
-        [switch]$TimesOnly = $false
+        [switch]$NoTotal = $false
     )
 
     begin {
@@ -608,7 +608,7 @@ function Format-DaylogTimecard
         ) | Where-Object { $_.Type -eq 'punch' -or $_.Time -gt 0 }
 
         Write-Output $timecard
-        if (-not $TimesOnly) {
+        if (-not $NoTotal) {
             $totalHours = ($timecard | Measure-Object -Property Time -Sum | Select-Object -ExpandProperty Sum)
             Write-Output ([PSCustomObject]@{Type = 'total'; Time = $totalHours})
         }
