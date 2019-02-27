@@ -446,6 +446,8 @@ function Find-Daylog
 
         [switch]$ThisQuarter = $false,
 
+        [switch]$ThisYear = $false,
+
         [string]$BilledTo = $null,
 
         [switch]$Content = $false,
@@ -491,6 +493,10 @@ function Find-Daylog
             {$_ -in 7..9}   { [datetime]::new($now.Year, 7, 1), [datetime]::new($now.Year, 9, 1) }
             {$_ -in 10..12} { [datetime]::new($now.Year, 9, 1), [datetime]::new($now.Year+1, 1, 1) }
         }
+    }
+
+    if ($ThisYear) {
+        $MinDate = [datetime]::new(([datetime]::Today).Year, 1, 1)
     }
 
     # Create objects from the file and filter based on parameters.
