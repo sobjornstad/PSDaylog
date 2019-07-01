@@ -10,7 +10,6 @@
 [string]$DAYLOG_FILE = "I:\fsroot\Job\Daylog\daylog.txt"
 [float]$ROUNDING_ERROR_TOLERANCE = 0.02
 [timespan]$DATE_ORDERING_TOLERANCE = [timespan]::new(0, 0, 15, 0)
-[float]$BREAK_TIME = 0.42
 [float]$LONGEST_EXPECTED_PERIOD_HOURS = 8.5
 
 
@@ -67,9 +66,10 @@ function Get-DayLengthForLine
 function parseDaylog
 {
     $daylogLines = (Get-Content $DAYLOG_FILE)
+    $breakDirectives = (Find-DaylogDirectives -DirectiveType Autobreaktime)
 
     $itemStartLine = -1
-    $lastDate = $null
+    $lastObj = $null
     $accumulator = [System.Collections.Generic.List[string]]@()
     $accumulatedProperties = @{}
     $itemDate = $null
@@ -128,6 +128,7 @@ function parseDaylog
                     $obj | Add-Member -MemberType NoteProperty -Name $property.Key -Value $property.Value
                 }
                 Write-Output $obj
+                $lastObj = $obj
 
                 $on = 'none'
                 $accumulator.Clear()
@@ -160,17 +161,17 @@ function parseDaylog
                     throw "Syntax error on line ${index}: invalid date format '$Matches[2]'."
                 }
 
-                if ($lastDate -gt $itemDate+$DATE_ORDERING_TOLERANCE) {
+                if ($lastObj.Timestamp.Date -gt $itemDate+$DATE_ORDERING_TOLERANCE) {
                     Write-Warning ("Item beginning at line ${index} has a significantly earlier date than " +
                                    "the entry preceding it. Did you enter the wrong date or time?")
                 }
 
-                if ($lastDate.Date -ne $itemDate.Date) {
-                    if ($null -ne $lastDate) {
-                        Write-Output (New-BreakItem -Timestamp $lastDate)
+                if ($lastObj.Timestamp.Date -ne $itemDate.Date) {
+                    if ($null -ne $lastObj.Timestamp.Date) {
+                        Write-Output (New-BreakItem -Timestamp $lastObj.Timestamp -LineNumber $lastObj.Line `
+                                                    -BreakDirectives $breakDirectives)
                     }
                 }
-                $lastDate = $itemDate
             }
 
             '^!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)' {
@@ -228,7 +229,8 @@ function parseDaylog
         $index++
     }
 
-    Write-Output (New-BreakItem -Timestamp $lastDate)
+    Write-Output (New-BreakItem -Timestamp $lastObj.Timestamp.Date -LineNumber $lastObj.Line `
+                                -BreakDirectives $breakDirectives)
 }
 
 
@@ -313,11 +315,20 @@ function Find-DaylogDirectives
 {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Autohat', 'Daylength')]
+        [ValidateSet('Autobreaktime', 'Autohat', 'Daylength')]
         [string]$DirectiveType
     )
 
     $directives = @{
+        Autobreaktime = @{Regex = '!autobreaktime\s+(?:(?<Hours>[0-9]+)h)?(?:(?<Minutes>[0-9]+)m)?\s*$'
+                          Generator = {
+                              param($LineNumber)
+                              [PSCustomObject]@{
+                                  DirectiveType = 'Autobreaktime'
+                                  LineNumber = $LineNumber
+                                  Time = (Convert-HoursMinutesToDecimal $Matches.Hours $Matches.Minutes)
+                              }
+                        }}
         Autohat   = @{Regex = '!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)'
                       Generator = {
                         param($LineNumber)
@@ -546,11 +557,14 @@ function Find-Daylog
 }
 
 
-function New-BreakItem ([datetime]$Timestamp)
+function New-BreakItem ([datetime]$Timestamp, [int]$LineNumber, [PSCustomObject[]]$BreakDirectives)
 {
-    return ([PSCustomObject]@{Type = 'break'
-                              Billing = @{'BreakTime' = [math]::Round($BREAK_TIME, 2)}
-                              Timestamp = $Timestamp})
+    $activeBreakTime = $BreakDirectives.Where({$_.LineNumber -le $LineNumber}, 'Last').Time
+    if ($Time -ne 0) {
+        return ([PSCustomObject]@{Type = 'break'
+                                Billing = @{'BreakTime' = $activeBreakTime}
+                                Timestamp = $Timestamp})
+    }
 }
 
 
