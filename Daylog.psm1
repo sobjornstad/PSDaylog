@@ -419,6 +419,12 @@ function Find-DaylogDirectives
 .PARAMETER ThisYear
     Find all entries occurring this year.
 
+.PARAMETER ExcludeToday
+    If entries from today would have been included in the results, don't show
+    them. This can be helpful when reviewing margin: since the margin
+    calculation considers any hours not worked *yet* today as hours not
+    worked for the day in total, the calculation is otherwise fairly useless
+    when in the middle of the day.
 
 .PARAMETER BilledTo
     Return only entries billed to the specified account;
@@ -471,6 +477,8 @@ function Find-Daylog
 
         [switch]$ThisYear = $false,
 
+        [switch]$ExcludeToday = $false,
+
         [string]$BilledTo = $null,
 
         [switch]$Content = $false,
@@ -520,6 +528,13 @@ function Find-Daylog
 
     if ($ThisYear) {
         $MinDate = [datetime]::new(([datetime]::Today).Year, 1, 1)
+    }
+
+    if ($ExcludeToday) {
+        $lastAllowableMaxDate = [datetime]::Today
+        if ($null -eq $MaxDate -or $lastAllowableMaxDate -lt $MaxDate) {
+            $MaxDate = $lastAllowableMaxDate
+        }
     }
 
     # Create objects from the file and filter based on parameters.
