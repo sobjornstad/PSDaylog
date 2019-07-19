@@ -1,4 +1,4 @@
-﻿<#
+<#
     TODO
     - Have a way to get all used fields (and maybe their frequency).
     - Allow autohatting multiple hats.
@@ -168,8 +168,8 @@ function parseDaylog
 
                 if ($lastObj.Timestamp.Date -ne $itemDate.Date) {
                     if ($null -ne $lastObj.Timestamp.Date) {
-                        Write-Output (New-BreakItem -Timestamp $lastObj.Timestamp -LineNumber $lastObj.Line `
-                                                    -BreakDirectives $breakDirectives)
+                        New-BreakItem -Timestamp $lastObj.Timestamp -LineNumber $lastObj.Line `
+                            -BreakDirectives $breakDirectives
                     }
                 }
             }
@@ -229,8 +229,7 @@ function parseDaylog
         $index++
     }
 
-    Write-Output (New-BreakItem -Timestamp $lastObj.Timestamp.Date -LineNumber $lastObj.Line `
-                                -BreakDirectives $breakDirectives)
+    New-BreakItem -Timestamp $lastObj.Timestamp.Date -LineNumber $lastObj.Line -BreakDirectives $breakDirectives
 }
 
 
@@ -560,7 +559,7 @@ function Find-Daylog
 function New-BreakItem ([datetime]$Timestamp, [int]$LineNumber, [PSCustomObject[]]$BreakDirectives)
 {
     $activeBreakTime = $BreakDirectives.Where({$_.LineNumber -le $LineNumber}, 'Last').Time
-    if ($Time -ne 0) {
+    if ($activeBreakTime -ne 0) {
         return ([PSCustomObject]@{Type = 'break'
                                 Billing = @{'BreakTime' = $activeBreakTime}
                                 Timestamp = $Timestamp})
