@@ -404,8 +404,21 @@ function Find-DaylogDirectives
     Shorthand for '-MinDate [datetime]::Today'.
 
 .PARAMETER ThisWeek
-    Find all entries dated after midnight of the previous Sunday (or midnight
-    today, if today is Sunday).
+    Limit results to entries dated after midnight of the preceding Sunday (or
+    midnight today, if today is Sunday).
+
+.PARAMETER ThisFortnight
+    Like -ThisWeek, but go back an additional week.
+
+.PARAMETER ThisQuarter
+    Limit results to entries from sometime in the current standard quarter
+    (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec). Unlike -ThisWeek and
+    -ThisFortnight, this is not a rolling window; on April 1 for instance,
+    only the current day's entries are displayed.
+
+.PARAMETER ThisYear
+    Find all entries occurring this year.
+
 
 .PARAMETER BilledTo
     Return only entries billed to the specified account;
