@@ -7,7 +7,7 @@
 
 
 [string]$EDITOR = "code"
-[string]$DAYLOG_FILE = "I:\fsroot\Job\Daylog\daylog.txt"
+[string]$DAYLOG_FILE = "/home/soren/.daylog"
 [float]$ROUNDING_ERROR_TOLERANCE = 0.02
 [timespan]$DATE_ORDERING_TOLERANCE = [timespan]::new(0, 0, 15, 0)
 [float]$LONGEST_EXPECTED_PERIOD_HOURS = 8.5
@@ -732,18 +732,20 @@ function Format-DaylogTimeSummary
     }
 
     process {
-        foreach ($pair in $_.Billing.GetEnumerator()) {
-            $category, $hours = $pair.Name, $pair.Value
-            $currentValue = if ($times.ContainsKey($category)) {
-                $times[$category]
-            } else {
-                0
+        foreach ($entry in $EntriesToSearch) {
+            foreach ($pair in $entry.Billing.GetEnumerator()) {
+                $category, $hours = $pair.Name, $pair.Value
+                $currentValue = if ($times.ContainsKey($category)) {
+                    $times[$category]
+                } else {
+                    0
+                }
+                $times[$category] = $currentValue + $hours
             }
-            $times[$category] = $currentValue + $hours
-        }
-        if (-not $seenDays.Contains($_.Timestamp.Date)) {
-            $daylength += Get-DayLengthForLine -Index $_.Line -DayLengths $DayLengths
-            $seenDays.Add($_.Timestamp.Date) > $null
+            if (-not $seenDays.Contains($entry.Timestamp.Date)) {
+                $daylength += Get-DayLengthForLine -Index $entry.Line -DayLengths $DayLengths
+                $seenDays.Add($entry.Timestamp.Date) > $null
+            }
         }
     }
 

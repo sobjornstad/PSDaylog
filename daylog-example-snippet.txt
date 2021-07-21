@@ -1,0 +1,109 @@
+!daylength 8h30m
+
+!autotag $TfsAutomation #TFS
+!autotag $TfsSupportInt #TFS
+!autotag $VBSupportInt #VBLS
+!autotag $SSSSSupportInt #SSSS
+!autotag $TfsSupportExt #TFS
+!autotag $VBSupportExt #VBLS
+!autotag $SSSSSupportExt #SSSS
+
+.punch 2018-11-07 07:00
+    Start day.
+.end punch
+
+.done 2018-11-07 07:30
+    $Administration~15m
+    $R11111~15m
+
+    Email. Sent workgroup info about Request 11111 to fix TFS maintenance
+    issues. Prepared notes for the TFS standup later today.
+.end done
+
+.done 2018-11-07 08:30
+    $ServiceVirtualization
+    #Research
+
+    Looking specifically into Parasoft's suite. Downloaded a trial version of
+    their software, Parasoft SOAtest & Virtualize. Trying to figure out how
+    to use it; having trouble firing up a test WCF service so I can feed it
+    WSDL and play with recording features.
+.end done
+
+.meeting 2018-11-07 09:05
+    $Administration
+    #TFS
+    :recurrenceof TfsStandup
+    :with TfsSupport
+
+    Margaret and Katie are both pretty busy and not doing too much new TFS
+    stuff.
+
+    [Agenda of the meeting goes here]
+.end meeting
+
+.todo 2018-11-07 09:10 =SamPerformanceTest
+    Talk to Sam about the performance testing for Project X that he's been doing,
+    as this seems to me like it may have a bearing on our service virtualization
+    research and implementation.
+.end todo
+
+.done 2018-11-07 09:45 =ParasoftRefreshIssue
+    $ServiceVirtualization
+    #Research
+
+    Playing more with Parasoft's software and taking notes into "products.txt"
+    in my notes about what it is capable of doing. I'm running into a weird
+    thing where I can't get it to refresh the currently running virtualized
+    service, so it's stuck forever on my initial iteration! In general, it
+    seems capable but not impressive; what I saw of SmartBear yesterday seemed
+    better to me. (However, that was all working with REST. I need to see how
+    it will work with SOAP as well to make a fair comparison.)
+.end done
+
+.punch 2018-11-07 10:00
+    Back from break.
+.end punch
+
+.solution 2018-11-07 10:15
+    #Research
+
+    Figured out why I was running into problems in @ParasoftRefreshIssue: when
+    you publish something as a virtual asset, it ends up hopping over into a
+    special folder called VirtualAssets, which then holds a copy of the asset
+    which doesn't get updated when you update the main asset!
+
+    This, needless to say, is stupid design and a strike against Parasoft
+    Virtualize.
+.end solution
+
+.done 2018-11-07 10:55
+    $ServiceVirtualization
+    #Research
+
+    Finished investigating Parasoft's software as far as I want to for my
+    immediate purposes. Did a little bit more reading because I realized I
+    had bookmarked some things earlier and not gotten through them.
+
+    Will uninstall the software so I don't get dinged on the security reports.
+    Can always pull it again if I need to investigate closer; I've gotten all
+    I need for now.
+.end done
+
+.done 2018-11-07 11:40
+    $ServiceVirtualization
+    #Research
+
+    Trialing ReadyAPI!. I like it better, that's for sure. However, I am
+    having trouble getting it to correctly map values to a data source. I'm
+    quite sure this was done yesterday, so I just must be missing the spot
+    where you set it up. I'll look more at that after lunch.
+
+    Having integrated testing is pretty slick, and it's a lot nicer than our
+    cruddy SoapUI tool. Don't know if we'd want to pay for it for everyone
+    who uses SoapUI though...
+.end done
+
+.punch 2018-11-07 12:20
+    Back from lunch.
+.end punch
