@@ -490,9 +490,6 @@ function Find-Daylog
         [string]$Hat = $null,
 
         [switch]$NoBreak = $false,
-
-        # below this line are not yet implemented
-        [string]$ReferencesName = $null
     )
 
     # Some parameters are aliases for other more complicated ones. Convert them
