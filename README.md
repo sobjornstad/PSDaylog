@@ -166,7 +166,7 @@ if you bill an unreasonable number of hours in a single entry
 (eight and a half hours by default).
 
 If you wish,
-you can write `*` instead of an amount of time on exactly one of the billing items;
+you can write `*` instead of an amount of time on the final billing item;
 this will consume all time since the last billable entry
 that isn't accounted for by another split billing item on this entry.
 (Beware that the asterisk can mask typos and arithmetic errors
@@ -242,9 +242,6 @@ they remain in effect until and unless overridden by another directive later in 
 * `!autohat $BillingAccount ^Hat`:
   Automatically add the hat *Hat* to any entry with a billing account of
   $BillingAccount.
-* `!autobreaktime 20m`:
-  Specify a number of hours and minutes which is automatically added to each day's time.
-  This feature is deprecated.
 * `!daylength 8h30m`:
   When performing margin calculations,
   this is the target number of hours you would like to work per day.
@@ -268,13 +265,6 @@ Of course, if you need something more complicated,
 you can use PowerShell's filtering tools!
 
 Use `Get-Help Find-Daylog` for a full description of all the supported parameters.
-
-Several other parameters do things other than simple filters:
-
-* `-Unresolved`: Shows only items of type `todo` whose `=name`s
-  have not been given as the value of a `:resolves` property in any entry.
-* `-NoBreak`: If `!autobreak` directives are in use,
-  filter out the automatic break entries.
 
 ### `Format-DaylogTimecard`
 

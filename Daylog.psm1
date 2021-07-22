@@ -66,7 +66,6 @@ function Get-DayLengthForLine
 function parseDaylog
 {
     $daylogLines = (Get-Content $DAYLOG_FILE)
-    $breakDirectives = (Find-DaylogDirectives -DirectiveType Autobreaktime)
 
     $itemStartLine = -1
     $lastObj = $null
@@ -165,13 +164,6 @@ function parseDaylog
                     Write-Warning ("Item beginning at line ${index} has a significantly earlier date than " +
                                    "the entry preceding it. Did you enter the wrong date or time?")
                 }
-
-                if ($lastObj.Timestamp.Date -ne $itemDate.Date) {
-                    if ($null -ne $lastObj.Timestamp.Date) {
-                        New-BreakItem -Timestamp $lastObj.Timestamp -LineNumber $lastObj.Line `
-                            -BreakDirectives $breakDirectives
-                    }
-                }
             }
 
             '^!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)' {
@@ -228,8 +220,6 @@ function parseDaylog
         }
         $index++
     }
-
-    New-BreakItem -Timestamp $lastObj.Timestamp.Date -LineNumber $lastObj.Line -BreakDirectives $breakDirectives
 }
 
 
@@ -314,20 +304,11 @@ function Find-DaylogDirectives
 {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Autobreaktime', 'Autohat', 'Daylength')]
+        [ValidateSet('Autohat', 'Daylength')]
         [string]$DirectiveType
     )
 
     $directives = @{
-        Autobreaktime = @{Regex = '!autobreaktime\s+(?:(?<Hours>[0-9]+)h)?(?:(?<Minutes>[0-9]+)m)?\s*$'
-                          Generator = {
-                              param($LineNumber)
-                              [PSCustomObject]@{
-                                  DirectiveType = 'Autobreaktime'
-                                  LineNumber = $LineNumber
-                                  Time = (Convert-HoursMinutesToDecimal $Matches.Hours $Matches.Minutes)
-                              }
-                        }}
         Autohat   = @{Regex = '!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)'
                       Generator = {
                         param($LineNumber)
@@ -443,15 +424,12 @@ function Find-DaylogDirectives
 
 .PARAMETER Name
     Return the item with exactly the specified name.
-
-.PARAMETER NoBreak
-    Do not return automatically added break time entries for each day.
 #>
 function Find-Daylog
 {
     [CmdletBinding()]
     param(
-        [ValidateSet('Punch','Todo','Done','Solution','Notes','Meeting', 'Break')]
+        [ValidateSet('Punch','Todo','Done','Solution','Notes','Meeting')]
         [string]$Type = $null,
 
         [string]$Contains = $null,
@@ -487,9 +465,7 @@ function Find-Daylog
 
         [string]$Name = $null,
 
-        [string]$Hat = $null,
-
-        [switch]$NoBreak = $false,
+        [string]$Hat = $null
     )
 
     # Some parameters are aliases for other more complicated ones. Convert them
@@ -540,9 +516,6 @@ function Find-Daylog
     if ($Type) {
         $objs = $objs | Where-Object Type -eq $Type
     }
-    if ($NoBreak) {
-        $objs = $objs | Where-Object Type -ne 'break'
-    }
     if ($Contains) {
         $objs = $objs | Where-Object Content -match ([regex]::Escape($Contains))
     }
@@ -577,17 +550,6 @@ function Find-Daylog
         return [string]::Join("`r`n`r`n", $objs.Content)
     } else {
         return $objs
-    }
-}
-
-
-function New-BreakItem ([datetime]$Timestamp, [int]$LineNumber, [PSCustomObject[]]$BreakDirectives)
-{
-    $activeBreakTime = $BreakDirectives.Where({$_.LineNumber -le $LineNumber}, 'Last').Time
-    if ($activeBreakTime -ne 0) {
-        return ([PSCustomObject]@{Type = 'break'
-                                Billing = @{'BreakTime' = $activeBreakTime}
-                                Timestamp = $Timestamp})
     }
 }
 
