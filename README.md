@@ -265,6 +265,10 @@ if you give several, only entries that match all of the criteria are returned.
 Of course, if you need something more complicated,
 you can use PowerShell's filtering tools!
 
+The `-Content` parameter outputs just the text of matching entries
+rather than a stream of PowerShell objects.
+You can use this to quickly produce a filtered version of your log.
+
 Use `Get-Help Find-Daylog` for a full description of all the supported parameters.
 
 ### `Format-DaylogTimecard`
