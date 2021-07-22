@@ -121,7 +121,7 @@ Daylog starts to shine when we add metadata to each entry.
 Metadata items are introduced by a symbol,
 different for each type of metadata.
 In most cases, it's easiest to write each piece of metadata on a separate line at the top of the entry;
-however, Daylog will recognize them anywhere within an entry,
+however, Daylog will recognize tags and attributes elsewhere within an entry,
 including in the middle of a line,
 so if you can integrate them directly into your text, feel free.
 
@@ -179,24 +179,23 @@ If including actual monetary amounts within the text of an entry,
 double up the dollar sign to tell Daylog it's not a billing item.
 So an amount of five hundred dollars would be written `$$500.00`.
 
-#### Hats
+#### Tags
 
-*Hats* categorize your work and group projects and entries together
+Tags categorize your work and group projects and entries together
 so you can quickly limit your searches to a single responsibility or problem domain.
-For instance, you might have a "teaching" hat and a "consulting" hat,
-or a "web design" hat, an "education" hat, and an "administration" hat.
+For instance, you might have a "teaching" tag and a "consulting" tag,
+or a "web design" tag, an "education" tag, and an "administration" tag.
 
-Hats use the character `^` (looks like a hat) plus the hat name.
-Hat names may contain letters and numbers;
-the first space or character of punctuation ends the hat name.
+Tags use the character `^` (looks like a hat) plus the tag name.
+tag names may contain letters and numbers;
+the first space or character of punctuation ends the tag name.
 
-Unlike billing accounts, hats are not mutually exclusive,
-and you can add any number of hats to an entry.
-If you like, you can think of hats as tags for your work.
+Unlike billing accounts, tags are not mutually exclusive,
+and you can add any number of tags to an entry.
 
-If you always assign a particular hat to entries with a particular billing item,
-you can use an `!autohat` directive to reduce the amount of typing required
-and the risk of skewing your data by forgetting to add the hat to an entry.
+If you always assign a particular tag to entries with a particular billing item,
+you can use an `!autotag` directive to reduce the amount of typing required
+and the risk of skewing your data by forgetting to add the tag to an entry.
 
 #### Item names
 
@@ -239,8 +238,8 @@ They can be used to implement almost any workflow.
 Directives begin with `!` and perform some kind of configuration;
 they remain in effect until and unless overridden by another directive later in the file.
 
-* `!autohat $BillingAccount ^Hat`:
-  Automatically add the hat *Hat* to any entry with a billing account of
+* `!autotag $BillingAccount ^Tag`:
+  Automatically add the tag *Tag* to any entry with a billing account of
   $BillingAccount.
 * `!daylength 8h30m`:
   When performing margin calculations,
@@ -288,8 +287,8 @@ In order to produce cross-cutting reports,
 you use parameters of `Find-Daylog` or PowerShell filtering tools
 to limit the input.
 For instance, to see a breakdown of time by billing area
-for all meetings in the `Consulting` hat,
-you could use `Find-Daylog -Hat Consulting -Type Meeting | Format-DaylogTimeSummary`.
+for all meetings with the `Consulting` tag,
+you could use `Find-Daylog -Tag Consulting -Type Meeting | Format-DaylogTimeSummary`.
 
 By default, the last line will show the total time;
 use the `-NoTotal` parameter

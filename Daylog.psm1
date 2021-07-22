@@ -74,9 +74,9 @@ function parseDaylog
     $itemDate = $null
     $itemName = $null
     $itemBilling = @{}
-    $hats = [System.Collections.ArrayList]@()
+    $tags = [System.Collections.ArrayList]@()
     $lastPunchTime = $null
-    $autohatMap = @{}
+    $autotagMap = @{}
 
     $on = 'none'
     $index = 1
@@ -120,8 +120,8 @@ function parseDaylog
                     Billing = $itemBilling.Clone()
                     Content = (Format-Accumulated $accumulator)
                 }
-                if ($hats) {
-                    $obj | Add-Member -MemberType NoteProperty -Name Hats -Value $hats.Clone()
+                if ($tags) {
+                    $obj | Add-Member -MemberType NoteProperty -Name Tags -Value $tags.Clone()
                 }
                 foreach ($property in $accumulatedProperties.GetEnumerator()) {
                     $obj | Add-Member -MemberType NoteProperty -Name $property.Key -Value $property.Value
@@ -133,7 +133,7 @@ function parseDaylog
                 $accumulator.Clear()
                 $accumulatedProperties.Clear()
                 $itemBilling.Clear()
-                $hats.Clear()
+                $tags.Clear()
                 $itemName = $null
 
                 if ($Matches[1] -in 'done','punch','meeting') {
@@ -166,8 +166,8 @@ function parseDaylog
                 }
             }
 
-            '^!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)' {
-                $autohatMap[$Matches[1]] = $Matches[2]
+            '^!autotag \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)' {
+                $autotagMap[$Matches[1]] = $Matches[2]
                 break
             }
 
@@ -185,7 +185,7 @@ function parseDaylog
             }
 
             '\^([a-zA-Z0-9]+)' {
-                $hats.Add($Matches[1]) > $null
+                $tags.Add($Matches[1]) > $null
             }
 
             '^\s*(?<!\$)\$([a-zA-Z0-9]+)(~\*|\s|$)' {
@@ -198,9 +198,9 @@ function parseDaylog
                 }
                 $itemBilling.Add($billedTo, $hours) > $null
 
-                if ($autohatMap.ContainsKey($Matches[1]) -and
-                        -not $hats.Contains($autohatMap[$Matches[1]])) {
-                    $hats.Add($autohatMap[$Matches[1]]) > $null
+                if ($autotagMap.ContainsKey($Matches[1]) -and
+                        -not $tags.Contains($autotagMap[$Matches[1]])) {
+                    $tags.Add($autotagMap[$Matches[1]]) > $null
                 }
 
                 # If using ~*, we don't want to hit the next case as well.
@@ -211,9 +211,9 @@ function parseDaylog
                 [string]$billedTo, [int]$billedHours, [int]$billedMinutes = $Matches[1..3]
                 $itemBilling.Add($billedTo, (Convert-HoursMinutesToDecimal $billedHours $billedMinutes)) > $null
 
-                if ($autohatMap.ContainsKey($Matches[1]) -and
-                        -not $hats.Contains($autohatMap[$Matches[1]])) {
-                    $hats.Add($autohatMap[$Matches[1]]) > $null
+                if ($autotagMap.ContainsKey($Matches[1]) -and
+                        -not $tags.Contains($autotagMap[$Matches[1]])) {
+                    $tags.Add($autotagMap[$Matches[1]]) > $null
                 }
             }
 
@@ -304,19 +304,19 @@ function Find-DaylogDirectives
 {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Autohat', 'Daylength')]
+        [ValidateSet('Autotag', 'Daylength')]
         [string]$DirectiveType
     )
 
     $directives = @{
-        Autohat   = @{Regex = '!autohat \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)'
+        Autotag   = @{Regex = '!autotag \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)'
                       Generator = {
                         param($LineNumber)
                         [PSCustomObject]@{
-                            DirectiveType = 'Autohat'
+                            DirectiveType = 'Autotag'
                             LineNumber = $LineNumber
                             BillingArea = $Matches[1]
-                            Hat = $Matches[2]
+                            Tag = $Matches[2]
                         }
                       }}
         Daylength = @{Regex = '^!daylength\s+(?:(?<Hours>[0-9]+)h)?(?:(?<Minutes>[0-9]+)m)?\s*$'
@@ -465,7 +465,7 @@ function Find-Daylog
 
         [string]$Name = $null,
 
-        [string]$Hat = $null
+        [string]$Tag = $null
     )
 
     # Some parameters are aliases for other more complicated ones. Convert them
@@ -541,8 +541,8 @@ function Find-Daylog
     if ($Name) {
         $objs = $objs | Where-Object Name -eq $Name
     }
-    if ($Hat) {
-        $objs = $objs | Where-Object Hats -contains $Hat
+    if ($Tag) {
+        $objs = $objs | Where-Object Tags -contains $Tag
     }
 
     # Output the results.
