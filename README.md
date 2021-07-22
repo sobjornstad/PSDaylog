@@ -66,7 +66,7 @@ All entry types have the same format in your daylog.
 An entry begins with an opening line, which looks like this:
 
 ```
-#entrytype 2020-01-01 08:00
+.entrytype 2020-01-01 08:00
 ```
 
 The year, month, day, hours, and minutes should of course be set
@@ -78,13 +78,15 @@ Many people like to indent some number of spaces
 between the opening and closing lines,
 but this is not required by Daylog.
 
-Last comes the closing line, which begins with `#end` followed by the entry type:
+Last comes the closing line, which begins with `.end` followed by the entry type:
 
 ```
-#end entrytype
+.end entrytype
 ```
 
-The # must always be the very first character on the line, with no whitespace before it.
+The `.` to begin or end an entry
+must be the very first character on the line,
+with no whitespace before it.
 
 You must end an entry before opening a new one,
 and the entry type must match that of the opening line that came before it.
@@ -96,9 +98,9 @@ This catches a significant number of common errors.
 Putting it all together, here's a simple *done entry*:
 
 ```
-#done 2021-07-21 17:55
+.done 2021-07-21 17:55
     Finished writing my TPS reports.
-#end done
+.end done
 ```
 
 Entries are expected to be found in the file in chronological order,
@@ -149,13 +151,13 @@ Split billing adds a tilde and the amount of time in hours and minutes
 after each billing item:
 
 ```
-#done 2021-05-23 09:00
+.done 2021-05-23 09:00
     $BobsWebsite~1h10m
     $TPSReports~20m
 
     Worked on fixing the mobile CSS for Bob's website.
     Interrupted briefly to go file my TPS reports.
-#end done
+.end done
 ```
 
 The total amount of time in all the split-billing items
@@ -320,13 +322,13 @@ creating a 0-hour bill to the specified account on that day
 and causing the day to be counted as a work day:
 
 ```
-#punch 2021-07-20 00:00
+.punch 2021-07-20 00:00
     Didn't work today.
-#end punch
+.end punch
 
-#punch 2021-07-20 00:00
+.punch 2021-07-20 00:00
     $EmptyDay
-#end punch
+.end punch
 ```
 
 More powerful options for margin calculation are planned.

@@ -86,8 +86,8 @@ function parseDaylog
         }
 
         switch -Regex ($line) {
-            '^#end\s+(.*)' {
-                $endswhat = $_ -replace '^\#end (.*)\s*','$1'
+            '^.end\s+(.*)' {
+                $endswhat = $_ -replace '^\.end (.*)\s*','$1'
                 if ($endswhat -ne $on) {
                     throw "Syntax error on line ${index}: '$on' block ended by '$endswhat'"
                 }
@@ -141,7 +141,7 @@ function parseDaylog
                 }
             }
 
-            '^#(punch|todo|solution|done|notes|meeting)\s+(20[0-9]{2}-[01][0-9]-[0-3][0-9] [0-2][0-9]:[0-5][0-9])' {
+            '^.(punch|todo|solution|done|notes|meeting)\s+(20[0-9]{2}-[01][0-9]-[0-3][0-9] [0-2][0-9]:[0-5][0-9])' {
                 if ($on -ne 'none') {
                     throw ("Syntax error on line ${index}: " +
                            "'$($Matches[1])' block opened while '$on' block was still open")
