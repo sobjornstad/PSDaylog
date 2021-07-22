@@ -166,7 +166,7 @@ function parseDaylog
                 }
             }
 
-            '^!autotag \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)' {
+            '^!autotag \$([a-zA-Z0-9]+) #([a-zA-Z0-9]+)' {
                 $autotagMap[$Matches[1]] = $Matches[2]
                 break
             }
@@ -184,7 +184,7 @@ function parseDaylog
                 }
             }
 
-            '\^([a-zA-Z0-9]+)' {
+            '#([a-zA-Z0-9]+)' {
                 $tags.Add($Matches[1]) > $null
             }
 
@@ -309,7 +309,7 @@ function Find-DaylogDirectives
     )
 
     $directives = @{
-        Autotag   = @{Regex = '!autotag \$([a-zA-Z0-9]+) \^([a-zA-Z0-9]+)'
+        Autotag   = @{Regex = '!autotag \$([a-zA-Z0-9]+) #([a-zA-Z0-9]+)'
                       Generator = {
                         param($LineNumber)
                         [PSCustomObject]@{
