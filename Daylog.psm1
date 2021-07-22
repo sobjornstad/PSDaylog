@@ -424,6 +424,9 @@ function Find-DaylogDirectives
 
 .PARAMETER Name
     Return the item with exactly the specified name.
+
+.PARAMETER Tags
+    Return only entries that have all of the specified tags.
 #>
 function Find-Daylog
 {
@@ -465,7 +468,7 @@ function Find-Daylog
 
         [string]$Name = $null,
 
-        [string]$Tag = $null
+        [string[]]$Tags = $null
     )
 
     # Some parameters are aliases for other more complicated ones. Convert them
@@ -541,8 +544,10 @@ function Find-Daylog
     if ($Name) {
         $objs = $objs | Where-Object Name -eq $Name
     }
-    if ($Tag) {
-        $objs = $objs | Where-Object Tags -contains $Tag
+    if ($Tags) {
+        foreach ($tag in $Tags) {
+            $objs = $objs | Where-Object Tags -contains $tag
+        }
     }
 
     # Output the results.
