@@ -16,6 +16,8 @@ and you can add your own fields if you want them.
 
 ## File format
 
+Daylog looks for your daylog file at `~/.daylog`
+(that is, the file called `.daylog` in your home directory).
 A daylog file consists of **entries** and **directives**.
 
 ### Entries
@@ -352,7 +354,7 @@ More powerful options for margin calculation are planned.
 *Alias: `edl`*
 
 This cmdlet opens your daylog in a text editor of your choice
-(set the `$EDITOR` variable at the top of `Daylog.psm1` to configure).
+(use the `!editor` directive to pick an editor).
 
 
 ### `Find-DaylogDirectives`

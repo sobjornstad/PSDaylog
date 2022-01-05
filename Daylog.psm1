@@ -1,12 +1,12 @@
 <#
     TODO
     - Have a way to get all used fields (and maybe their frequency).
-    - Allow autohatting multiple hats.
+    - Allow autotagging multiple tags at once.
 #>
 
 
 
-[string]$DAYLOG_FILE = "/home/soren/.daylog"
+[string]$DAYLOG_FILE = Join-Path $HOME ".daylog"
 [float]$ROUNDING_ERROR_TOLERANCE = 0.02
 [timespan]$DATE_ORDERING_TOLERANCE = [timespan]::new(0, 0, 15, 0)
 [float]$LONGEST_EXPECTED_PERIOD_HOURS = 8.5
