@@ -6,7 +6,6 @@
 
 
 
-[string]$EDITOR = "code"
 [string]$DAYLOG_FILE = "/home/soren/.daylog"
 [float]$ROUNDING_ERROR_TOLERANCE = 0.02
 [timespan]$DATE_ORDERING_TOLERANCE = [timespan]::new(0, 0, 15, 0)
@@ -270,12 +269,13 @@ function Add-ResolvedMarkerFromList ([Parameter(Mandatory, ValueFromPipeline)][P
 
 <#
 .SYNOPSIS
-    Open the daylog file in the `$EDITOR defined in Daylog.psm1.
+    Open the daylog file in the text editor defined by the latest !editor directive.
 
 .DESCRIPTION
     The Daylog PowerShell bindings only ever read from the daylog file, not
     write to it. In order to make entries, you need to edit the file using
-    your own tools. This is an easy way to open up the daylog.
+    your own tools. This is an easy way to open up the daylog if you already
+    have PowerShell open.
 
 .EXAMPLE
     Edit-Daylog
@@ -284,7 +284,12 @@ function Add-ResolvedMarkerFromList ([Parameter(Mandatory, ValueFromPipeline)][P
 #>
 function Edit-Daylog
 {
-    & $EDITOR $DAYLOG_FILE
+    $editor = ((Find-DaylogDirectives -DirectiveType "editor") | Sort-Object LineNumber | Select-Object -Last 1).Value
+    if (-not $editor) {
+        Write-Error "Please add an !editor directive (e.g., '!editor vim' or '!editor code') to your daylog to use this feature."
+        exit 1
+    }
+    & $editor $DAYLOG_FILE
 }
 
 
@@ -304,7 +309,7 @@ function Find-DaylogDirectives
 {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Autotag', 'Daylength')]
+        [ValidateSet('Autotag', 'Daylength', 'Editor')]
         [string]$DirectiveType
     )
 
@@ -326,6 +331,15 @@ function Find-DaylogDirectives
                             DirectiveType = 'Daylength'
                             LineNumber = $LineNumber
                             Time = (Convert-HoursMinutesToDecimal $Matches.Hours $Matches.Minutes)
+                        }
+                      }}
+        Editor    = @{Regex = '!editor (.*)'
+                      Generator = {
+                        param($LineNumber)
+                        [PSCustomObject]@{
+                            DirectiveType = 'Editor'
+                            LineNumber = $LineNumber
+                            Value = $Matches[1]
                         }
                       }}
     }

@@ -246,6 +246,9 @@ they remain in effect until and unless overridden by another directive later in 
 * `!daylength 8h30m`:
   When performing margin calculations (see *Margin calculation*, below),
   this is the target number of hours you would like to work per day.
+* `!editor vim`:
+  When running `Edit-Daylog`, your daylog file will be opened for editing
+  by executing this command (passing the path to the daylog file as a parameter).
 
 
 ## Cmdlets

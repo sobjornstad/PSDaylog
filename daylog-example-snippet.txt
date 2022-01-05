@@ -1,4 +1,5 @@
 !daylength 8h30m
+!editor code
 
 !autotag $TfsAutomation #TFS
 !autotag $TfsSupportInt #TFS
