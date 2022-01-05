@@ -104,7 +104,7 @@ Putting it all together, here's a simple *done entry*:
 ```
 
 Entries are expected to be found in the file in chronological order,
-and you'll receive a warning if they don't,
+and you'll receive a warning if they aren't,
 as this usually means you've made a typo in the date or time.
 To avoid being annoying if you add two entries right next to each other
 and later increase the time on the first one
@@ -139,7 +139,7 @@ For each entry, you can use either *standard billing* or *split billing*.
 
 **Standard billing** consists of just the dollar sign plus an account or project name,
 like `$TPSReports` or `$BobsWebsite`.
-An standard billing item bills all of the time elapsed
+A standard billing item bills all of the time elapsed
 since the preceding *billable entry* (*punch*, *done*, or *meeting*)
 to the specified account.
 
@@ -188,12 +188,12 @@ so you can quickly limit your searches to a single responsibility or problem dom
 For instance, you might have a "teaching" tag and a "consulting" tag,
 or a "web design" tag, an "education" tag, and an "administration" tag.
 
-Tags use the character `^` (looks like a hat) plus the tag name.
-tag names may contain letters and numbers;
+Tags use the character `#` plus the tag name.
+Tag names may contain letters and numbers;
 the first space or character of punctuation ends the tag name.
 
 Unlike billing accounts, tags are not mutually exclusive,
-and you can add any number of tags to an entry.
+and you can add any number of tags to some entries.
 
 If you always assign a particular tag to entries with a particular billing item,
 you can use an `!autotag` directive to reduce the amount of typing required
@@ -240,11 +240,11 @@ They can be used to implement almost any workflow.
 Directives begin with `!` and perform some kind of configuration;
 they remain in effect until and unless overridden by another directive later in the file.
 
-* `!autotag $BillingAccount ^Tag`:
+* `!autotag $BillingAccount #Tag`:
   Automatically add the tag *Tag* to any entry with a billing account of
   $BillingAccount.
 * `!daylength 8h30m`:
-  When performing margin calculations,
+  When performing margin calculations (see *Margin calculation*, below),
   this is the target number of hours you would like to work per day.
 
 
@@ -256,7 +256,9 @@ to work with the data.
 
 ### `Find-Daylog`
 
-This cmdlet (alias `fdl`) parses your daylog
+*Alias: `fdl`*
+
+This cmdlet parses your daylog
 and produces a stream of PowerShell objects, one for each matching entry.
 With no parameters, it returns all entries in the log.
 It supports several dozen parameters
@@ -273,7 +275,9 @@ Use `Get-Help Find-Daylog` for a full description of all the supported parameter
 
 ### `Format-DaylogTimecard`
 
-This cmdlet (alias `fdt`) accepts the output of `Find-Daylog` as pipeline input
+*Alias: `fdt`*
+
+This cmdlet accepts the output of `Find-Daylog` as pipeline input
 and creates a table showing the type, timestamp, billing accounts, and time billed
 for each entry.
 This is a convenient way to review your day or week
@@ -287,7 +291,9 @@ or doing arithmetic on them.
 
 ### `Format-DaylogTimeSummary`
 
-This cmdlet (alias `fds`) accepts the output of `Find-Daylog` as pipeline input
+*Alias: `fds`*
+
+This cmdlet accepts the output of `Find-Daylog` as pipeline input
 and produces the total number of hours spent in each billing area.
 In order to produce cross-cutting reports,
 you use parameters of `Find-Daylog` or PowerShell filtering tools
@@ -336,3 +342,23 @@ and causing the day to be counted as a work day:
 ```
 
 More powerful options for margin calculation are planned.
+
+
+### `Edit-Daylog`
+
+*Alias: `edl`*
+
+This cmdlet opens your daylog in a text editor of your choice
+(set the `$EDITOR` variable at the top of `Daylog.psm1` to configure).
+
+
+### `Find-DaylogDirectives`
+
+*Alias: `fdd`*
+
+This cmdlet outputs all directives (see the *Directives* section)
+in your daylog as PowerShell objects.
+This is usually not useful interactively,
+but it could come in handy if you're writing your own PowerShell script
+that interacts with Daylog
+and you need to get some information about the present configuration.

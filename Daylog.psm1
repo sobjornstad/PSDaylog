@@ -374,19 +374,25 @@ function Find-DaylogDirectives
 
 .PARAMETER MinDate
     Return only entries dated after the specified .NET datetime.
+    YYYY-MM-DD strings given on the command line are automatically
+    coerced to .NET datetimes.
 
 .PARAMETER MaxDate
-    Return only entries dated before the specified .NET datetime. Note that
-    if you specify a date only, the range is effectively exclusive since it
-    matches only midnight. In other words, "2018-12-15" will include all
-    entries on the 14th and entries dated exactly midnight on the 15th.
+    Return only entries dated before the specified .NET datetime.  The search
+    includes the endpoint, but if you don't specify a time, the range is
+    effectively exclusive since it matches only midnight. In other words,
+    "2018-12-15" will include all entries on the 14th and entries dated exactly
+    midnight on the 15th.
 
 .PARAMETER Today
     Shorthand for '-MinDate [datetime]::Today'.
 
+.PARAMETER Yesterday
+    Limit results to entries timestamped the day before today.
+
 .PARAMETER ThisWeek
-    Limit results to entries dated after midnight of the preceding Sunday (or
-    midnight today, if today is Sunday).
+    Limit results to entries timestamped after midnight of the preceding Sunday
+    (or midnight today, if today is Sunday).
 
 .PARAMETER ThisFortnight
     Like -ThisWeek, but go back an additional week.
@@ -398,7 +404,7 @@ function Find-DaylogDirectives
     only the current day's entries are displayed.
 
 .PARAMETER ThisYear
-    Find all entries occurring this year.
+    Find all entries occurring in the current calendar year.
 
 .PARAMETER ExcludeToday
     If entries from today would have been included in the results, don't show
@@ -604,6 +610,7 @@ function Format-DaylogTimecard
     begin {
         $accumulator = [System.Collections.ArrayList]@()
     }
+
     process {
         $accumulator.Add($ValueToFormat) > $null
     }
@@ -633,13 +640,11 @@ function Format-DaylogTimecard
 
 .DESCRIPTION
     Given a list of items obtained from Find-Daylog, walk through them and sum
-    up the time that you spent on each billing item. This is useful both for
-    official time reporting and to get an idea of how long you're spending on
-    things; the Time Reporting Reports are helpful but this has the potential
-    to be even more helpful.
+    up the time that you spent on each billing item.
 
-    Since you can pipe in absolutely any set of arguments, you can easily get
-    a report on whatever you can dream of.
+    Since you can pipe in absolutely any set of arguments, you can easily get a
+    report on whatever subset of your work you like, provided you have
+    appropriate metadata in your log file.
 
 .PARAMETER EntriesToSearch
     A stream of daylog entries.
@@ -671,10 +676,10 @@ function Format-DaylogTimecard
     PS> Find-Daylog -ThisWeek | Format-DaylogTimeSummary
 
 .EXAMPLE
-    See how long you've spent in TFS standup meetings since the beginning of the year:
+    See how long you've spent in standup meetings since the beginning of the year:
     PS> Find-Daylog `
             -Type Meeting `
-            -Attribute recurrenceof=TfsStandup `
+            -Attribute recurrenceof=Standup `
             -MinDate ([datetime]::new(2018,1,1)) | Format-DaylogTimeSummary
 #>
 function Format-DaylogTimeSummary
