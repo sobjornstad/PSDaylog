@@ -13,12 +13,39 @@ If you already use PowerShell, you can learn to use Daylog in a few minutes.
 Daylog has support for several common types of metadata built in,
 and you can add your own fields if you want them.
 
+To the best of my knowledge,
+Daylog supports both Windows PowerShell and PowerShell Core.
+I currently use PowerShell Core,
+but I initially developed Daylog on PowerShell 5.1
+and only minor changes have been made since.
+But I don't currently have a Windows PC,
+so I can't confirm for certain that it still works on 5.1.
+Let me know if anything doesn't work for you.
+
+
+## Installation
+
+Copy the `Daylog` folder in this repository to the appropriate location:
+
+* Windows, PowerShell 5.1: `$HOME/Documents/WindowsPowerShell/Modules`.
+* Windows, PowerShell Core: `$HOME/Documents/PowerShell/Modules`.
+* Mac or Linux, PowerShell Core: `~/.local/share/powershell/Modules`.
+
+Create a new text file called `.daylog` in your home directory
+to store your daylog.
+
+Restart any open PowerShell sessions.
+You should now be able to run Daylog cmdlets.
+
 
 ## File format
 
 Daylog looks for your daylog file at `~/.daylog`
 (that is, the file called `.daylog` in your home directory).
 A daylog file consists of **entries** and **directives**.
+
+Refer to the `daylog-example-snippet.txt` file in this repository
+for a sample daylog file.
 
 ### Entries
 
